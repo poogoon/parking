@@ -3,150 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>편백나무 주차 배정 (PC/모바일 통합)</title>
+    <title>편백나무 주차 배정 시스템</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         /* 기본 스타일 */
-        body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; text-align: center; background-color: #f0f2f5; margin: 0; padding: 15px; color: #333; }
-        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h1 { color: #1a73e8; margin-bottom: 5px; font-size: 1.6rem; }
-        .desc { font-size: 13px; color: #666; margin-bottom: 20px; }
+        body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; text-align: center; background-color: #f4f7f9; margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #2c3e50; margin-bottom: 8px; font-size: 1.5rem; letter-spacing: -0.5px; }
+        .desc { font-size: 13px; color: #7f8c8d; margin-bottom: 25px; }
 
-        /* 📱 세대 목록 레이어 (핵심 수정!) */
-        .dong-wrapper { 
-            display: flex; 
-            flex-wrap: wrap; /* 화면 좁으면 줄바꿈 */
-            justify-content: center; 
-            gap: 15px; 
-            margin-bottom: 20px; 
-            text-align: left; 
-            width: 100%; 
-        }
-        .dong-column { 
-            flex: 1; 
-            min-width: 250px; /* PC에선 가로 3개, 모바일에선 꽉차게 */
-            background: #f8f9fa; 
-            padding: 15px; 
-            border-radius: 12px; 
-            border: 1px solid #e1e4e8; 
-            box-sizing: border-box;
-        }
-        .dong-title { font-weight: bold; border-bottom: 2px solid #1a73e8; padding-bottom: 8px; margin-bottom: 12px; text-align: center; color: #1a73e8; font-size: 15px; }
+        /* 세대 목록 레이아웃 */
+        .dong-wrapper { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 25px; text-align: left; }
+        .dong-column { flex: 1; min-width: 280px; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dcdde1; box-sizing: border-box; }
+        .dong-title { font-weight: bold; border-bottom: 2px solid #34495e; padding-bottom: 10px; margin-bottom: 15px; text-align: center; color: #2c3e50; font-size: 15px; }
         
-        /* 목록 아이템 */
-        .list-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 13px; }
-        .list-item input { margin-right: 8px; width: 18px; height: 18px; cursor: pointer; }
-        .list-item label { cursor: pointer; width: 100%; display: flex; align-items: center; }
+        .list-item { display: flex; align-items: center; margin-bottom: 9px; font-size: 14px; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
+        .list-item:hover { background: #f1f2f6; }
+        .list-item input { margin-right: 10px; width: 17px; height: 17px; cursor: pointer; }
+        .list-item label { cursor: pointer; width: 100%; }
 
         /* 설정 영역 */
-        .config-area { background: #e8f0fe; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
-        .input-group { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; font-weight: bold; font-size: 14px; }
-        .input-item { background: white; padding: 6px 12px; border-radius: 8px; border: 1px solid #ccc; display: flex; align-items: center; gap: 5px; }
-        input[type="number"] { width: 45px; text-align: center; border: 1px solid #ddd; padding: 4px; border-radius: 4px; font-weight: bold; }
+        .config-area { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #edeff1; }
+        .input-group { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-weight: bold; font-size: 14px; color: #444; }
+        .input-item { background: white; padding: 8px 15px; border-radius: 6px; border: 1px solid #ced4da; display: flex; align-items: center; gap: 8px; }
+        input[type="number"] { width: 45px; text-align: center; border: 1px solid #ddd; padding: 4px; border-radius: 4px; font-weight: bold; outline: none; }
         
-        button { border: none; padding: 16px; font-size: 16px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; color: white; transition: 0.3s; }
-        .btn-draw { background-color: #1a73e8; }
-        .btn-print { background-color: #4CAF50; display: none; width: 48%; display: inline-block; } 
-        .btn-save { background-color: #FF5722; display: none; width: 48%; display: inline-block; }
+        button { border: none; padding: 16px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 15px; color: white; transition: background 0.3s; }
+        .btn-draw { background-color: #34495e; box-shadow: 0 4px 6px rgba(52, 73, 94, 0.2); }
+        .btn-draw:hover { background-color: #2c3e50; }
+        .btn-print { background-color: #27ae60; display: none; width: 48%; display: inline-block; } 
+        .btn-save { background-color: #e67e22; display: none; width: 48%; display: inline-block; }
 
-        /* 🎰 로또 애니메이션 */
+        /* 진중한 로딩 애니메이션 */
         #loadingOverlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.96); z-index: 1000;
+            background: rgba(255,255,255,0.98); z-index: 1000;
             flex-direction: column; justify-content: center; align-items: center;
         }
-        .lotto-ball-container { display: flex; gap: 12px; margin-bottom: 25px; }
-        .lotto-ball {
-            width: 55px; height: 55px; border-radius: 50%; background: #ffca28;
-            color: white; font-weight: bold; font-size: 22px;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            animation: bounce 0.5s infinite alternate;
-        }
-        .lotto-ball:nth-child(2) { background: #42a5f5; animation-delay: 0.1s; }
-        .lotto-ball:nth-child(3) { background: #66bb6a; animation-delay: 0.2s; }
-        .lotto-ball:nth-child(4) { background: #ef5350; animation-delay: 0.3s; }
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-20px); } }
-        .loading-text { font-size: 1.2rem; font-weight: bold; color: #333; }
+        .process-bar { width: 200px; height: 4px; background: #eee; border-radius: 2px; position: relative; overflow: hidden; margin-bottom: 20px; }
+        .process-progress { width: 0%; height: 100%; background: #34495e; position: absolute; transition: width 0.1s; }
+        .loading-text { font-size: 1.1rem; font-weight: bold; color: #2c3e50; }
 
-        /* 결과 영역 및 맵 스타일 */
-        #resultArea { display: none; margin-top: 30px; border: 2.5px solid #333; padding: 25px; border-radius: 12px; background-color: white; }
-        .result-header { font-size: 22px; font-weight: bold; border-bottom: 2.5px solid #333; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .result-date { font-size: 14px; font-weight: normal; color: #555; }
-        .map-container { display: flex; flex-direction: column; gap: 20px; align-items: center; }
-        .building-section { width: 100%; border: 2px solid #444; border-radius: 10px; padding: 20px 10px; position: relative; background: #fff; box-sizing: border-box; }
-        .building-label { position: absolute; top: -14px; left: 15px; background: #333; color: white; padding: 4px 14px; font-size: 12px; border-radius: 20px; font-weight: bold; }
-        .parking-row { display: flex; justify-content: center; gap: 5px; margin: 5px 0; align-items: center; flex-wrap: nowrap; }
-        .driveway-text { font-size: 11px; color: #aaa; margin: 10px 0; letter-spacing: 12px; font-weight: bold; text-align: center; width: 100%; }
+        /* 결과 화면 디자인 */
+        #resultArea { display: none; margin-top: 35px; border: 2px solid #2c3e50; padding: 30px; border-radius: 8px; background-color: white; }
+        .result-header { font-size: 22px; font-weight: bold; border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .result-date { font-size: 14px; font-weight: normal; color: #7f8c8d; }
         
-        .between-section { width: 100%; background-color: #f1f8e9; border-radius: 10px; padding: 15px; display: flex; justify-content: center; align-items: center; position: relative; box-sizing: border-box; border: 1px dashed #81c784; }
-        .between-label { position: absolute; left: 10px; font-size: 12px; font-weight: bold; color: #2e7d32; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px; }
-        .between-content { display: flex; gap: 40px; justify-content: center; align-items: center; }
-        .between-column { display: flex; flex-direction: column; gap: 8px; align-items: center; }
-        .col-header { font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 4px; background: #fff; border: 1px solid #ccc; margin-bottom: 2px; }
+        /* 맵 스타일 */
+        .map-container { display: flex; flex-direction: column; gap: 25px; align-items: center; }
+        .building-section { width: 100%; border: 1.5px solid #2c3e50; border-radius: 8px; padding: 25px 15px; position: relative; background: #fff; box-sizing: border-box; }
+        .building-label { position: absolute; top: -13px; left: 20px; background: #2c3e50; color: white; padding: 3px 15px; font-size: 12px; border-radius: 4px; font-weight: bold; }
+        .parking-row { display: flex; justify-content: center; gap: 6px; margin: 6px 0; align-items: center; flex-wrap: nowrap; }
+        .driveway-text { font-size: 11px; color: #bdc3c7; margin: 12px 0; letter-spacing: 12px; font-weight: bold; text-align: center; width: 100%; }
+        
+        .between-section { width: 100%; background-color: #f9fbfd; border-radius: 8px; padding: 18px; display: flex; justify-content: center; align-items: center; position: relative; box-sizing: border-box; border: 1px dashed #3498db; }
+        .between-label { position: absolute; left: 12px; font-size: 12px; font-weight: bold; color: #3498db; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px; }
+        .between-content { display: flex; gap: 50px; justify-content: center; align-items: center; }
+        .between-column { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .col-header { font-size: 11px; font-weight: bold; padding: 2px 10px; border-radius: 3px; background: #3498db; color: white; margin-bottom: 4px; }
 
-        .slot { width: 62px; height: 80px; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; text-align: center; position: relative; box-shadow: 1px 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
-        .slot strong { display: block; font-size: 13px; width: 100%; line-height: 1.3; white-space: normal; color: #333; }
-        .slot span { font-size: 9px; opacity: 0.7; transform: scale(0.9); display: block; }
+        .slot { width: 65px; height: 85px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; text-align: center; position: relative; border: 1px solid #dcdde1; overflow: hidden; }
+        .slot strong { display: block; font-size: 13px; width: 100%; line-height: 1.3; color: #2c3e50; }
         
-        .type-spot { background-color: #fff9c4; border: 1.5px solid #fbc02d; color: #f57f17; }
-        .type-spot.filled { background-color: #fff3e0; border-color: #ffa726; color: #000; font-weight: bold; }
-        .type-pillar { background-color: #90a4ae; color: white; width: 28px; height: 80px; font-size: 10px; border: none; writing-mode: vertical-lr; letter-spacing: 2px; }
-        .type-entrance { background-color: #e3f2fd; border: 2.5px solid #2196f3; color: #0d47a1; font-weight: bold; width: 75px; font-size: 13px; }
-        .type-disabled { background-color: #e8eaf6; border: 2.5px solid #3f51b5; color: #1a237e; font-weight: bold; }
-        .type-unassigned { background-color: #f5f5f5; border: 1.5px dashed #bdbdbd; color: #9e9e9e; font-weight: bold; }
+        .type-spot { background-color: #fff; }
+        .type-spot.filled { background-color: #f1f9ff; border-color: #3498db; font-weight: bold; }
+        .type-pillar { background-color: #95a5a6; color: white; width: 30px; height: 85px; font-size: 10px; border: none; writing-mode: vertical-lr; letter-spacing: 2px; }
+        .type-entrance { background-color: #ecf0f1; border: 2px solid #bdc3c7; color: #7f8c8d; font-weight: bold; width: 80px; font-size: 13px; }
+        .type-disabled { background-color: #edf2ff; border: 2px solid #3f51b5; color: #3f51b5; font-weight: bold; }
+        .type-unassigned { background-color: #fdfdfd; border: 1.5px dashed #dcdde1; color: #95a5a6; font-weight: bold; }
         
-        .footer { margin-top: 50px; text-align: center; font-weight: bold; font-size: 15px; line-height: 1.8; }
+        .footer { margin-top: 60px; text-align: center; font-weight: bold; font-size: 16px; color: #2c3e50; border-top: 1px solid #eee; padding-top: 30px; }
         
-        @media print { .no-print { display: none !important; } }
+        @media print { .no-print { display: none !important; } #resultArea { border: 1px solid #000; padding: 20px; } }
     </style>
 </head>
 <body>
 
 <div id="loadingOverlay">
-    <div class="lotto-ball-container">
-        <div class="lotto-ball">?</div>
-        <div class="lotto-ball">?</div>
-        <div class="lotto-ball">?</div>
-        <div class="lotto-ball">?</div>
-    </div>
-    <div class="loading-text" id="loadingStatus">추첨기를 준비 중입니다...</div>
+    <div class="process-bar"><div id="progressBar" class="process-progress"></div></div>
+    <div class="loading-text" id="loadingStatus">배정 프로세스 가동 중...</div>
 </div>
 
 <div class="container">
-    <h1 class="no-print">🚗 편백나무 주차 배정 (최종)</h1>
-    <p class="desc no-print">각 동별로 주차할 세대를 체크해 주세요. 화면 넓이에 따라 나란히 보입니다.</p>
+    <h1 class="no-print">편백나무 주차 구역 배정 시스템</h1>
+    <p class="desc no-print">객관적이고 투명한 추첨을 위해 실시간 난수 배정 알고리즘을 사용합니다.</p>
 
     <div class="dong-wrapper no-print">
-        <div id="column-A" class="dong-column"><div class="dong-title">A동 세대 목록</div></div>
-        <div id="column-B" class="dong-column"><div class="dong-title">B동 세대 목록</div></div>
-        <div id="column-C" class="dong-column"><div class="dong-title">C동 세대 목록</div></div>
+        <div id="column-A" class="dong-column"><div class="dong-title">A동 (대상 세대)</div></div>
+        <div id="column-B" class="dong-column"><div class="dong-title">B동 (대상 세대)</div></div>
+        <div id="column-C" class="dong-column"><div class="dong-title">C동 (대상 세대)</div></div>
     </div>
 
     <div class="config-area no-print">
         <div class="input-group">
-            <div class="input-item"><span>A동</span><input type="number" id="limitA" value="9">대</div>
-            <div class="input-item"><span>B동</span><input type="number" id="limitB" value="10">대</div>
-            <div class="input-item"><span>C동</span><input type="number" id="limitC" value="9">대</div>
+            <div class="input-item"><span>A동 배정수</span><input type="number" id="limitA" value="9"></div>
+            <div class="input-item"><span>B동 배정수</span><input type="number" id="limitB" value="10"></div>
+            <div class="input-item"><span>C동 배정수</span><input type="number" id="limitC" value="9"></div>
         </div>
-        <button class="btn-draw" onclick="startLottoDraw()">🎰 럭키 로또 추첨 시작!</button>
+        <button class="btn-draw" onclick="startOfficialDraw()">주차 구역 배정 추첨 시작</button>
     </div>
 
     <div id="resultArea">
         <div class="result-header">
-            <span>주차 배치도 결과</span>
+            <span>주차 구역 배정 결과 보고서</span>
             <span class="result-date" id="printDate"></span>
         </div>
         <div class="map-container" id="mapContainer"></div>
         <div class="footer">
-            <p>위와 같이 공정한 추첨을 통해 주차 구역 배정이 완료되었습니다.</p>
+            <p>본 결과는 입주민 동의하에 자동 추첨 시스템을 통해 공정하게 결정되었습니다.</p>
             <br><p>편백나무 타운하우스 입주민 대표 (인)</p>
         </div>
     </div>
 
     <div class="no-print" style="margin-top:25px; display:flex; gap:12px; justify-content:center;">
-        <button id="printBtn" class="btn-print" onclick="window.print()">🖨️ 결과 출력하기</button>
-        <button id="saveBtn" class="btn-save" onclick="saveAsImage()">🖼️ 이미지로 저장</button>
+        <button id="printBtn" class="btn-print" onclick="window.print()">결과 문서 출력</button>
+        <button id="saveBtn" class="btn-save" onclick="saveAsImage()">결과 이미지 저장</button>
     </div>
 </div>
 
@@ -167,36 +138,40 @@
     }
     generateList();
 
-    function startLottoDraw() {
+    function startOfficialDraw() {
         const getChecked = (dong) => Array.from(document.querySelectorAll(`#column-${dong} input:checked`)).map(e => e.value);
         const candidates = { 'A': getChecked('A'), 'B': getChecked('B'), 'C': getChecked('C') };
-        if (candidates.A.length + candidates.B.length + candidates.C.length === 0) return alert("추첨 대상 세대를 선택해 주세요.");
+        if (candidates.A.length + candidates.B.length + candidates.C.length === 0) return alert("대상 세대를 선택해 주세요.");
 
         const overlay = document.getElementById('loadingOverlay');
         const statusText = document.getElementById('loadingStatus');
-        const balls = document.querySelectorAll('.lotto-ball');
+        const progressBar = document.getElementById('progressBar');
         overlay.style.display = 'flex';
         
-        const steps = ["추첨 공을 세차게 섞는 중...", "행운의 번호를 뽑고 있습니다...", "최적의 자리를 배치하는 중...", "배치가 거의 끝났습니다!"];
-        let stepIdx = 0;
-
-        const ballInterval = setInterval(() => {
-            balls.forEach(ball => { ball.innerText = Math.floor(Math.random() * 45) + 1; });
-        }, 80);
-
-        const textInterval = setInterval(() => {
-            if(stepIdx < steps.length) statusText.innerText = steps[stepIdx++];
-            else clearInterval(textInterval);
+        const steps = [
+            { t: "시스템 보안 확인 및 난수 엔진 가동 중...", p: 30 },
+            { t: "동별 대상 세대 명단 대조 중...", p: 60 },
+            { t: "공정 주차 알고리즘에 따른 구역 배정 중...", p: 90 },
+            { t: "배정 결과 최종 검증 중...", p: 100 }
+        ];
+        
+        let currentStep = 0;
+        const process = setInterval(() => {
+            if(currentStep < steps.length) {
+                statusText.innerText = steps[currentStep].t;
+                progressBar.style.width = steps[currentStep].p + "%";
+                currentStep++;
+            } else {
+                clearInterval(process);
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    showOfficialResult(candidates);
+                }, 500);
+            }
         }, 800);
-
-        setTimeout(() => {
-            clearInterval(ballInterval);
-            overlay.style.display = 'none';
-            showResult(candidates);
-        }, 3400);
     }
 
-    function showResult(candidates) {
+    function showOfficialResult(candidates) {
         const limits = {
             'A': parseInt(document.getElementById('limitA').value) || 0,
             'B': parseInt(document.getElementById('limitB').value) || 0,
@@ -208,50 +183,50 @@
         });
 
         const now = new Date();
-        document.getElementById('printDate').innerText = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} 추첨 완료`;
+        document.getElementById('printDate').innerText = `추첨 일시: ${now.toLocaleString()}`;
         document.getElementById('resultArea').style.display = 'block';
         document.getElementById('printBtn').style.display = 'inline-block';
         document.getElementById('saveBtn').style.display = 'inline-block';
 
-        renderMap(winners);
+        renderOfficialMap(winners);
         window.scrollTo({ top: document.getElementById('resultArea').offsetTop - 20, behavior: 'smooth' });
     }
 
-    function renderMap(winners) {
+    function renderOfficialMap(winners) {
         const container = document.getElementById('mapContainer');
         container.innerHTML = '';
         const qA = [...winners.A]; const qB = [...winners.B]; const qC = [...winners.C];
 
         const createSlot = (type, queue) => {
             let content = '';
-            let className = `type-${type === 'S' ? 'spot' : type === 'P' ? 'pillar' : type === 'E' ? 'entrance' : type === 'D' ? 'disabled' : type === 'U' ? 'unassigned' : 'space'}`;
+            let className = `slot type-${type === 'S' ? 'spot' : type === 'P' ? 'pillar' : type === 'E' ? 'entrance' : type === 'D' ? 'disabled' : type === 'U' ? 'unassigned' : 'space'}`;
             if (type === 'S') {
                 const w = queue && queue.length > 0 ? queue.shift() : '';
                 if (w) { content = `<strong>${w.replace('-', '<br>')}</strong>`; className += ' filled'; }
-                else content = `<span>빈자리</span>`;
+                else content = `<span style="color:#ccc">미배정</span>`;
             } else if (type === 'D') content = '♿';
             else if (type === 'U') content = '비지정';
             else if (type === 'P') content = '기둥';
             else if (type === 'E') content = '출입문';
-            return `<div class="slot ${className}">${content}</div>`;
+            return `<div class="${className}">${content}</div>`;
         };
         const row = (layout, queue) => `<div class="parking-row">${layout.map(t => createSlot(t, queue)).join('')}</div>`;
 
         container.innerHTML = `
             <div class="building-section"><div class="building-label">A동 필로티</div>
-                ${row(['D', 'P', 'U', 'P', 'S', 'S'], qA)}<div class="driveway-text">통 로</div>
+                ${row(['D', 'P', 'U', 'P', 'S', 'S'], qA)}<div class="driveway-text">배차 통로</div>
                 ${row(['S', 'P', 'S', 'E', 'S', 'P', 'S', 'S'], qA)}</div>
             <div class="between-section"><div class="between-label">A-B 사이</div><div class="between-content">
-                <div class="between-column"><div class="col-header">A동</div>${createSlot('S', qA)}${createSlot('S', qA)}</div>
-                <div class="between-column"><div class="col-header">B동</div>${createSlot('S', qB)}${createSlot('D', null)}</div></div></div>
+                <div class="between-column"><div class="col-header">A동 구역</div>${createSlot('S', qA)}${createSlot('S', qA)}</div>
+                <div class="between-column"><div class="col-header">B동 구역</div>${createSlot('S', qB)}${createSlot('D', null)}</div></div></div>
             <div class="building-section"><div class="building-label">B동 필로티</div>
-                ${row(['S', 'S', 'P', 'U', 'P', 'S', 'S'], qB)}<div class="driveway-text">통 로</div>
+                ${row(['S', 'S', 'P', 'U', 'P', 'S', 'S'], qB)}<div class="driveway-text">배차 통로</div>
                 ${row(['S', 'S', 'E', 'S', 'S'], qB)}</div>
             <div class="between-section"><div class="between-label">B-C 사이</div><div class="between-content">
-                <div class="between-column"><div class="col-header">B동</div>${createSlot('S', qB)}${createSlot('S', qB)}</div>
-                <div class="between-column"><div class="col-header">C동</div>${createSlot('S', qC)}${createSlot('S', qC)}</div></div></div>
+                <div class="between-column"><div class="col-header">B동 구역</div>${createSlot('S', qB)}${createSlot('S', qB)}</div>
+                <div class="between-column"><div class="col-header">C동 구역</div>${createSlot('S', qC)}${createSlot('S', qC)}</div></div></div>
             <div class="building-section"><div class="building-label">C동 필로티</div>
-                ${row(['S', 'S', 'P', 'S', 'D', 'P', '_'], qC)}<div class="driveway-text">통 로</div>
+                ${row(['S', 'S', 'P', 'S', 'D', 'P', '_'], qC)}<div class="driveway-text">배차 통로</div>
                 ${row(['S', 'S', 'E', 'S', 'S'], qC)}</div>`;
     }
 
@@ -259,7 +234,7 @@
         const area = document.getElementById('resultArea');
         html2canvas(area, { scale: 2 }).then(canvas => {
             const link = document.createElement('a');
-            link.download = `편백나무_주차배정결과.png`;
+            link.download = `편백나무_주차배정_공식결과.png`;
             link.href = canvas.toDataURL();
             link.click();
         });
