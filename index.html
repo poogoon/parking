@@ -3,96 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>편백나무 주차 배정 시스템</title>
+    <title>편백나무 주차 배정 시스템 (동기화 버전)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* 기본 스타일 */
+        /* 기존 디자인 스타일 유지 */
         body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; text-align: center; background-color: #f4f7f9; margin: 0; padding: 15px; color: #333; }
         .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         h1 { color: #2c3e50; margin-bottom: 8px; font-size: 1.5rem; letter-spacing: -0.5px; }
         .desc { font-size: 13px; color: #7f8c8d; margin-bottom: 25px; }
-
-        /* 세대 목록 레이아웃 */
         .dong-wrapper { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 25px; text-align: left; }
         .dong-column { flex: 1; min-width: 280px; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dcdde1; box-sizing: border-box; }
         .dong-title { font-weight: bold; border-bottom: 2px solid #34495e; padding-bottom: 10px; margin-bottom: 15px; text-align: center; color: #2c3e50; font-size: 15px; }
-        
         .list-item { display: flex; align-items: center; margin-bottom: 9px; font-size: 14px; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
         .list-item:hover { background: #f1f2f6; }
         .list-item input { margin-right: 10px; width: 17px; height: 17px; cursor: pointer; }
         .list-item label { cursor: pointer; width: 100%; }
-
-        /* 설정 영역 */
         .config-area { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #edeff1; }
         .input-group { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-weight: bold; font-size: 14px; color: #444; }
         .input-item { background: white; padding: 8px 15px; border-radius: 6px; border: 1px solid #ced4da; display: flex; align-items: center; gap: 8px; }
         input[type="number"] { width: 45px; text-align: center; border: 1px solid #ddd; padding: 4px; border-radius: 4px; font-weight: bold; outline: none; }
-        
         button { border: none; padding: 16px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 15px; color: white; transition: background 0.3s; }
         .btn-draw { background-color: #34495e; box-shadow: 0 4px 6px rgba(52, 73, 94, 0.2); }
         .btn-draw:hover { background-color: #2c3e50; }
         .btn-print { background-color: #27ae60; display: none; width: 48%; display: inline-block; } 
         .btn-save { background-color: #e67e22; display: none; width: 48%; display: inline-block; }
-
-        /* 로딩 애니메이션 */
-        #loadingOverlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.98); z-index: 1000;
-            flex-direction: column; justify-content: center; align-items: center;
-        }
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
         .process-bar { width: 200px; height: 4px; background: #eee; border-radius: 2px; position: relative; overflow: hidden; margin-bottom: 20px; }
-        .process-progress { width: 0%; height: 100%; background: #34495e; position: absolute; transition: width 0.1s; }
+        .process-progress { width: 0%; height: 100%; background: #34495e; position: absolute; }
         .loading-text { font-size: 1.1rem; font-weight: bold; color: #2c3e50; }
-
-        /* 결과 화면 디자인 */
         #resultArea { display: none; margin-top: 35px; border: 2px solid #2c3e50; padding: 30px; border-radius: 8px; background-color: white; }
         .result-header { font-size: 22px; font-weight: bold; border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
         .result-date { font-size: 14px; font-weight: normal; color: #7f8c8d; }
-        
-        /* 맵 스타일 */
         .map-container { display: flex; flex-direction: column; gap: 25px; align-items: center; }
         .building-section { width: 100%; border: 1.5px solid #2c3e50; border-radius: 8px; padding: 25px 15px; position: relative; background: #fff; box-sizing: border-box; }
         .building-label { position: absolute; top: -13px; left: 20px; background: #2c3e50; color: white; padding: 3px 15px; font-size: 12px; border-radius: 4px; font-weight: bold; }
         .parking-row { display: flex; justify-content: center; gap: 6px; margin: 6px 0; align-items: center; flex-wrap: nowrap; }
         .driveway-text { font-size: 11px; color: #bdc3c7; margin: 12px 0; letter-spacing: 12px; font-weight: bold; text-align: center; width: 100%; }
-        
         .between-section { width: 100%; background-color: #f9fbfd; border-radius: 8px; padding: 18px; display: flex; justify-content: center; align-items: center; position: relative; box-sizing: border-box; border: 1px dashed #3498db; }
         .between-label { position: absolute; left: 12px; font-size: 12px; font-weight: bold; color: #3498db; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px; }
         .between-content { display: flex; gap: 50px; justify-content: center; align-items: center; }
         .between-column { display: flex; flex-direction: column; gap: 10px; align-items: center; }
         .col-header { font-size: 11px; font-weight: bold; padding: 2px 10px; border-radius: 3px; background: #3498db; color: white; margin-bottom: 4px; }
-
         .slot { width: 65px; height: 85px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; text-align: center; position: relative; border: 1px solid #dcdde1; overflow: hidden; }
         .slot strong { display: block; font-size: 13px; width: 100%; line-height: 1.3; color: #2c3e50; }
-        
-        /* 장애인 전용 구역 스타일 */
         .type-disabled { background-color: #edf2ff; border: 2px solid #3f51b5; color: #3f51b5; font-weight: bold; }
         .type-disabled .icon-disabled { font-size: 29px; margin-bottom: 2px; display: block; }
-
-        .type-spot { background-color: #fff; }
         .type-spot.filled { background-color: #f1f9ff; border-color: #3498db; font-weight: bold; }
         .type-pillar { background-color: #95a5a6; color: white; width: 30px; height: 85px; font-size: 10px; border: none; writing-mode: vertical-lr; letter-spacing: 2px; }
         .type-entrance { background-color: #ecf0f1; border: 2px solid #bdc3c7; color: #7f8c8d; font-weight: bold; width: 80px; font-size: 13px; }
-        .type-unassigned { background-color: #fdfdfd; border: 1.5px dashed #dcdde1; color: #95a5a6; font-weight: bold; }
-        
-        /* 미배정 강조 스타일 (빨간색) */
+        .type-unassigned { background-color: #fdfdfd; border: 1.5px dashed #bdbdbd; color: #9e9e9e; font-weight: bold; }
         .unassigned-label { color: #e74c3c !important; font-weight: bold; }
-
         .footer { margin-top: 60px; text-align: center; font-weight: bold; font-size: 16px; color: #2c3e50; border-top: 1px solid #eee; padding-top: 30px; }
-        
-        @media print { .no-print { display: none !important; } #resultArea { border: 1px solid #000; padding: 20px; } }
+        @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
 <div id="loadingOverlay">
     <div class="process-bar"><div id="progressBar" class="process-progress"></div></div>
-    <div class="loading-text" id="loadingStatus">배정 프로세스 가동 중...</div>
+    <div class="loading-text" id="loadingStatus">공정 배정 엔진 가동 중...</div>
 </div>
 
 <div class="container">
     <h1 class="no-print">편백나무 주차 구역 배정 시스템</h1>
-    <p class="desc no-print">객관적이고 투명한 추첨을 위해 실시간 난수 배정 알고리즘을 사용합니다.</p>
+    <p class="desc no-print">오늘 날짜를 기준으로 동기화되어 모든 입주민이 동일한 결과를 보게 됩니다.</p>
 
     <div class="dong-wrapper no-print">
         <div id="column-A" class="dong-column"><div class="dong-title">A동 (대상 세대)</div></div>
@@ -116,7 +90,7 @@
         </div>
         <div class="map-container" id="mapContainer"></div>
         <div class="footer">
-            <p>본 결과는 입주민 동의하에 자동 추첨 시스템을 통해 공정하게 결정되었습니다.</p>
+            <p>본 결과는 금일 날짜를 시드로 한 자동 추첨 시스템을 통해 공정하게 결정되었습니다.</p>
             <br><p>편백나무 타운하우스 입주민 대표 (인)</p>
         </div>
     </div>
@@ -128,6 +102,14 @@
 </div>
 
 <script>
+    // 🎲 시드 기반 무작위 숫자 생성기 (동기화의 핵심)
+    function seededRandom(seed) {
+        return function() {
+            seed = (seed * 9301 + 49297) % 233280;
+            return seed / 233280;
+        };
+    }
+
     function generateList() {
         const columns = { 'A': document.getElementById('column-A'), 'B': document.getElementById('column-B'), 'C': document.getElementById('column-C') };
         const unchecked = ['A동 201호', 'A동 202호', 'A동 401호', 'C동 202호', 'C동 502호'];
@@ -150,46 +132,44 @@
         if (candidates.A.length + candidates.B.length + candidates.C.length === 0) return alert("대상 세대를 선택해 주세요.");
 
         const overlay = document.getElementById('loadingOverlay');
-        const statusText = document.getElementById('loadingStatus');
         const progressBar = document.getElementById('progressBar');
         overlay.style.display = 'flex';
         
-        const steps = [
-            { t: "시스템 보안 확인 및 난수 엔진 가동 중...", p: 30 },
-            { t: "동별 대상 세대 명단 대조 중...", p: 60 },
-            { t: "공정 주차 알고리즘에 따른 구역 배정 중...", p: 90 },
-            { t: "배정 결과 최종 검증 중...", p: 100 }
-        ];
-        
-        let currentStep = 0;
-        const process = setInterval(() => {
-            if(currentStep < steps.length) {
-                statusText.innerText = steps[currentStep].t;
-                progressBar.style.width = steps[currentStep].p + "%";
-                currentStep++;
-            } else {
-                clearInterval(process);
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                    showOfficialResult(candidates);
-                }, 500);
+        let p = 0;
+        const interval = setInterval(() => {
+            p += 5;
+            progressBar.style.width = p + "%";
+            if(p >= 100) {
+                clearInterval(interval);
+                overlay.style.display = 'none';
+                showOfficialResult(candidates);
             }
-        }, 800);
+        }, 50);
     }
 
     function showOfficialResult(candidates) {
+        const now = new Date();
+        // 🗓️ 오늘 날짜(YYYYMMDD)를 시드로 사용하여 결과 고정
+        const seedValue = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+        const rng = seededRandom(seedValue);
+
         const limits = {
             'A': parseInt(document.getElementById('limitA').value) || 0,
             'B': parseInt(document.getElementById('limitB').value) || 0,
             'C': parseInt(document.getElementById('limitC').value) || 0
         };
+
         const winners = {};
         ['A', 'B', 'C'].forEach(d => {
-            winners[d] = candidates[d].sort(() => 0.5 - Math.random()).slice(0, limits[d]); 
+            // 시드 기반 셔플
+            winners[d] = candidates[d]
+                .map(value => ({ value, sort: rng() }))
+                .sort((a, b) => a.sort - b.sort)
+                .map(({ value }) => value)
+                .slice(0, limits[d]);
         });
 
-        const now = new Date();
-        document.getElementById('printDate').innerText = `추첨 일시: ${now.toLocaleString()}`;
+        document.getElementById('printDate').innerText = `배정 기준일: ${now.toLocaleDateString()}`;
         document.getElementById('resultArea').style.display = 'block';
         document.getElementById('printBtn').style.display = 'inline-block';
         document.getElementById('saveBtn').style.display = 'inline-block';
@@ -201,31 +181,23 @@
     function renderOfficialMap(winners) {
         const container = document.getElementById('mapContainer');
         container.innerHTML = '';
-        
         const hasC403 = winners.C.includes('C-403호');
-        const qA = [...winners.A]; 
-        const qB = [...winners.B]; 
+        const qA = [...winners.A]; const qB = [...winners.B]; 
         const qC = winners.C.filter(name => name !== 'C-403호');
 
         const createSlot = (type, queue, dongName = '') => {
             let content = '';
             let className = `slot type-${type === 'S' ? 'spot' : type === 'P' ? 'pillar' : type === 'E' ? 'entrance' : type === 'D' ? 'disabled' : type === 'U' ? 'unassigned' : 'space'}`;
-            
             if (type === 'S') {
                 const w = queue && queue.length > 0 ? queue.shift() : '';
                 if (w) { content = `<strong>${w.replace('-', '<br>')}</strong>`; className += ' filled'; }
                 else content = `<span class="unassigned-label">미배정</span>`; 
             } else if (type === 'D') {
-                if (dongName === 'C' && hasC403) {
-                    content = '<span class="icon-disabled">♿</span><strong>C<br>403호</strong>';
-                    className += ' filled';
-                } else {
-                    content = '<span class="icon-disabled">♿</span>비지정';
-                }
+                if (dongName === 'C' && hasC403) { content = '<span class="icon-disabled">♿</span><strong>C<br>403호</strong>'; className += ' filled'; }
+                else content = '<span class="icon-disabled">♿</span>비지정';
             } else if (type === 'U') content = '비지정';
             else if (type === 'P') content = '기둥';
             else if (type === 'E') content = '출입문';
-            
             return `<div class="${className}">${content}</div>`;
         };
         
