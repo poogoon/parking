@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>편백나무 주차 배정 (동별 추첨)</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        /* 기본 스타일 */
+        body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; text-align: center; background-color: #f0f2f5; margin: 0; padding: 10px; color: #333; -webkit-text-size-adjust: none; }
+        .container { max-width: 100%; margin: auto; background: white; padding: 15px 10px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); box-sizing: border-box; }
+        h1 { font-size: 1.4rem; margin-bottom: 5px; color: #1a73e8; word-break: keep-all; }
+        .desc { font-size: 12px; color: #666; margin-bottom: 15px; word-break: keep-all; }
+
+        .dong-wrapper { display: flex; justify-content: center; gap: 5px; margin-bottom: 20px; text-align: left; width: 100%; }
+        .dong-column { flex: 1; background: #f8f9fa; padding: 8px 4px; border-radius: 10px; border: 1px solid #e1e4e8; min-width: 0; }
+        .dong-title { font-weight: bold; border-bottom: 2px solid #1a73e8; padding-bottom: 4px; margin-bottom: 8px; text-align: center; color: #1a73e8; font-size: 13px; }
+        
+        .list-item { display: flex; align-items: center; margin-bottom: 6px; font-size: 12px; white-space: nowrap; overflow: hidden; }
+        .list-item input { margin-right: 3px; width: 14px; height: 14px; flex-shrink: 0; }
+        .list-item label { display: flex; align-items: center; width: 100%; cursor: pointer; overflow: hidden; }
+
+        .config-area { background: #e8f0fe; padding: 12px; border-radius: 12px; margin-bottom: 15px; }
+        .input-group { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; font-weight: bold; font-size: 13px; }
+        .input-item { display: flex; align-items: center; gap: 3px; background: white; padding: 5px 10px; border-radius: 8px; border: 1px solid #d0d7de; }
+        input[type="number"] { width: 35px; padding: 5px; border-radius: 5px; border: 1px solid #ccc; text-align: center; font-size: 14px; }
+        
+        button { border: none; padding: 12px; font-size: 15px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 8px; transition: 0.3s; }
+        .btn-draw { background-color: #1a73e8; color: white; margin-top: 15px; }
+        .btn-print { background-color: #4CAF50; color: white; margin-top: 10px; display: none; } 
+        .btn-save { background-color: #FF5722; color: white; margin-top: 10px; display: none; }
+
+        #resultArea { margin-top: 20px; padding: 15px; background: #ffffff; border: 2px solid #1a73e8; border-radius: 15px; display: none; text-align: left; }
+        .result-header { font-size: 18px; font-weight: bold; color: #1a73e8; margin-bottom: 5px; text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .result-date { font-size: 12px; color: #666; text-align: right; margin-bottom: 5px; font-weight: normal; }
+        .edit-hint { font-size: 12px; color: #e91e63; text-align: center; margin-bottom: 10px; font-weight: bold; }
+        
+        /* 결과 그리드 스타일 */
+        .result-section-title { grid-column: 1 / -1; background-color: #eee; padding: 5px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 10px; border-radius: 5px; color: #333; }
+        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .result-slot { padding: 8px; background: #f1f8e9; border-radius: 5px; font-size: 13px; border: 1px solid #c8e6c9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; }
+        .editable-name { border-bottom: 1px dashed #999; cursor: text; padding: 0 2px; color: #000; font-weight: normal; }
+        
+        .print-footer { display: none; margin-top: 50px; text-align: center; font-size: 14px; font-weight: bold; }
+
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
+        .lotto-ball { width: 80px; height: 80px; background: radial-gradient(circle at 30% 30%, #ffd700, #ff8c00); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; animation: bounce 0.5s infinite alternate; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-20px); } }
+
+        /* 🖨️ 인쇄 및 이미지 저장 시 적용될 스타일 */
+        @media print {
+            body { background-color: white; padding: 0; -webkit-print-color-adjust: exact; }
+            .container { box-shadow: none; border: none; padding: 0; width: 100%; max-width: 100%; }
+            .no-print { display: none !important; }
+            #resultArea { display: block !important; border: 2px solid #333; margin: 0; padding: 20px; page-break-inside: avoid; }
+            .result-header { color: #000; font-size: 24px; border-bottom: 2px solid #333; }
+            .edit-hint { display: none; }
+            .result-slot { border: 1px solid #333; background-color: #fff; color: #000; font-size: 14px; }
+            .result-section-title { background-color: #ddd !important; border: 1px solid #333; color: #000; }
+            .editable-name { border-bottom: none; }
+            .print-footer { display: block; }
+            h1 { display: none; }
+        }
+
+        /* 🖼️ 이미지 캡처 모드용 강제 스타일 */
+        .capturing-mode .edit-hint { display: none !important; }
+        .capturing-mode .print-footer { display: block !important; }
+        .capturing-mode .editable-name { border-bottom: none !important; }
+        .capturing-mode { border: 2px solid #333 !important; padding: 20px !important; background-color: white; }
+        .capturing-mode .result-header { border-bottom: 2px solid #333 !important; color: #000 !important; }
+        .capturing-mode .result-slot { border: 1px solid #333 !important; color: #000 !important; }
+        .capturing-mode .result-section-title { background-color: #ddd !important; border: 1px solid #333 !important; color: #000 !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="no-print">🚗 편백나무 주차 배정 (동별)</h1>
+    <p class="desc no-print">각 동별로 체크된 세대끼리만 추첨합니다.</p>
+
+    <div class="dong-wrapper no-print">
+        <div class="dong-column" id="column-A"><div class="dong-title">A동</div></div>
+        <div class="dong-column" id="column-B"><div class="dong-title">B동</div></div>
+        <div class="dong-column" id="column-C"><div class="dong-title">C동</div></div>
+    </div>
+
+    <div class="config-area no-print">
+        <div class="input-group">
+            <div class="input-item"><span>A동</span> <input type="number" id="limitA" value="8"><span>대</span></div>
+            <div class="input-item"><span>B동</span> <input type="number" id="limitB" value="10"><span>대</span></div>
+            <div class="input-item"><span>C동</span> <input type="number" id="limitC" value="9"><span>대</span></div>
+        </div>
+        <button class="btn-draw" onclick="startDraw()">동별 배정 추첨 시작!</button>
+    </div>
+
+    <div id="resultArea">
+        <div class="result-header">
+            주차 구역 배정 결과
+            <div class="result-date" id="printDate"></div>
+        </div>
+        <div class="edit-hint no-print">💡 Tip: 호수를 클릭하면 내용을 수정할 수 있습니다.</div>
+        
+        <div id="winnerList" class="result-grid"></div>
+
+        <div class="print-footer">
+            <p>위와 같이 주차 구역 배정이 완료되었습니다.</p>
+            <br><br>
+            <p>2026년 &nbsp;&nbsp; 월 &nbsp;&nbsp; 일</p>
+            <br>
+            <p style="font-size: 16px;">편백나무 타운하우스 입주민 대표 (인)</p>
+        </div>
+    </div>
+
+    <button id="printBtn" class="btn-print no-print" onclick="window.print()">🖨️ 결과 출력하기 (A4)</button>
+    <button id="saveBtn" class="btn-save no-print" onclick="saveAsImage()">🖼️ 결과 이미지 저장 (폰/PC)</button>
+</div>
+
+<div id="overlay">
+    <div class="lotto-ball">🎱</div>
+    <div style="margin-top:20px; font-weight:bold; color:#1a73e8;">동별 공정 추첨 진행 중...</div>
+</div>
+
+<script>
+    // 🛑 기본적으로 체크 해제할 명단 (요청사항 반영)
+    const uncheckedList = [
+        'A동 B01호', 'A동 201호', 'A동 202호', 'A동 301호', 'A동 401호',
+        'C동 202호', 'C동 502호'
+    ];
+
+    function generateList() {
+        const columns = { 'A': document.getElementById('column-A'), 'B': document.getElementById('column-B'), 'C': document.getElementById('column-C') };
+
+        // A동
+        addSet(columns['A'], `A동 B01호`, `B01호`);
+        for (let floor = 2; floor <= 5; floor++) {
+            for (let room = 1; room <= 3; room++) { addSet(columns['A'], `A동 ${floor}0${room}호`, `${floor}0${room}호`); }
+        }
+
+        // B동
+        addSet(columns['B'], `B동 B01호`, `B01호`); 
+        for (let floor = 2; floor <= 5; floor++) {
+            let maxRoom = (floor <= 3) ? 3 : 2;
+            for (let room = 1; room <= maxRoom; room++) { addSet(columns['B'], `B동 ${floor}0${room}호`, `${floor}0${room}호`); }
+        }
+
+        // C동
+        for (let floor = 2; floor <= 5; floor++) {
+            let maxRoom = (floor <= 4) ? 3 : 2;
+            for (let room = 1; room <= maxRoom; room++) { addSet(columns['C'], `C동 ${floor}0${room}호`, `${floor}0${room}호`); }
+        }
+    }
+
+    function addSet(column, fullName, displayName) {
+        // uncheckedList에 포함되어 있으면 체크 해제 상태('')로, 아니면 체크('checked')
+        const isChecked = uncheckedList.includes(fullName) ? '' : 'checked';
+        
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `<label><input type="checkbox" ${isChecked} value="${fullName}">${displayName}</label>`;
+        column.appendChild(div);
+    }
+
+    generateList();
+
+    const printDate = document.getElementById('printDate');
+
+    function startDraw() {
+        const allChecked = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'));
+        if (allChecked.length === 0) return alert("추첨 대상 세대가 없습니다.");
+
+        const candidates = {
+            'A': allChecked.filter(el => el.value.startsWith('A동')).map(el => el.value),
+            'B': allChecked.filter(el => el.value.startsWith('B동')).map(el => el.value),
+            'C': allChecked.filter(el => el.value.startsWith('C동')).map(el => el.value)
+        };
+
+        const limits = {
+            'A': parseInt(document.getElementById('limitA').value) || 0,
+            'B': parseInt(document.getElementById('limitB').value) || 0,
+            'C': parseInt(document.getElementById('limitC').value) || 0
+        };
+        
+        const overlay = document.getElementById('overlay');
+        const winnerList = document.getElementById('winnerList');
+        const resultArea = document.getElementById('resultArea');
+        const printBtn = document.getElementById('printBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        
+        const now = new Date();
+        printDate.innerText = `추첨일: ${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
+
+        resultArea.style.display = 'none';
+        printBtn.style.display = 'none';
+        saveBtn.style.display = 'none';
+        winnerList.innerHTML = '';
+        overlay.style.display = 'flex';
+
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            
+            ['A', 'B', 'C'].forEach(dong => {
+                const groupCandidates = candidates[dong];
+                const limit = limits[dong];
+
+                if (groupCandidates.length > 0 && limit > 0) {
+                    const sectionTitle = document.createElement('div');
+                    sectionTitle.className = 'result-section-title';
+                    sectionTitle.innerText = `${dong}동 배정 결과 (총 ${Math.min(limit, groupCandidates.length)}대)`;
+                    winnerList.appendChild(sectionTitle);
+
+                    const shuffled = groupCandidates.sort(() => 0.5 - Math.random());
+                    const winners = shuffled.slice(0, limit);
+
+                    winners.forEach((winner, index) => {
+                        const slot = document.createElement('div');
+                        slot.className = 'result-slot';
+                        slot.innerHTML = `<b>${index + 1}번:</b> <span class="editable-name" contenteditable="true">${winner}</span>`;
+                        winnerList.appendChild(slot);
+                    });
+                }
+            });
+
+            resultArea.style.display = 'block';
+            printBtn.style.display = 'block';
+            saveBtn.style.display = 'block';
+            window.scrollTo({ top: resultArea.offsetTop - 20, behavior: 'smooth' });
+        }, 1500);
+    }
+
+    function saveAsImage() {
+        const resultArea = document.getElementById('resultArea');
+        const saveBtn = document.getElementById('saveBtn');
+
+        saveBtn.innerText = "이미지 생성 중...";
+        saveBtn.disabled = true;
+
+        resultArea.classList.add('capturing-mode');
+
+        setTimeout(() => {
+             html2canvas(resultArea, {
+                backgroundColor: "#ffffff",
+                scale: 2
+            }).then(canvas => {
+                resultArea.classList.remove('capturing-mode');
+                saveBtn.innerText = "🖼️ 결과 이미지 저장 (폰/PC)";
+                saveBtn.disabled = false;
+
+                const link = document.createElement('a');
+                link.download = `동별주차추첨결과_${printDate.innerText.replace('추첨일: ', '').replace(/\./g,'')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }, 300);
+    }
+</script>
+</body>
+</html>
