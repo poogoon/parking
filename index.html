@@ -65,9 +65,9 @@
         .slot { width: 65px; height: 85px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; text-align: center; position: relative; border: 1px solid #dcdde1; overflow: hidden; }
         .slot strong { display: block; font-size: 13px; width: 100%; line-height: 1.3; color: #2c3e50; }
         
-        /* 장애인 전용 구역 스타일 (크기 확대) */
+        /* 장애인 전용 구역 스타일 (아이콘 대폭 확대) */
         .type-disabled { background-color: #edf2ff; border: 2px solid #3f51b5; color: #3f51b5; font-weight: bold; }
-        .type-disabled .icon-disabled { font-size: 32px; margin-bottom: 2px; display: block; }
+        .type-disabled .icon-disabled { font-size: 36px; margin-bottom: -4px; display: block; }
 
         .type-spot { background-color: #fff; }
         .type-spot.filled { background-color: #f1f9ff; border-color: #3498db; font-weight: bold; }
@@ -198,23 +198,37 @@
     function renderOfficialMap(winners) {
         const container = document.getElementById('mapContainer');
         container.innerHTML = '';
-        const qA = [...winners.A]; const qB = [...winners.B]; const qC = [...winners.C];
+        
+        // C동 403호 특수 배정 로직
+        const hasC403 = winners.C.includes('C-403호');
+        const qA = [...winners.A]; 
+        const qB = [...winners.B]; 
+        const qC = winners.C.filter(name => name !== 'C-403호'); // 일반 대기열에서 제외
 
-        const createSlot = (type, queue) => {
+        const createSlot = (type, queue, dongName = '') => {
             let content = '';
             let className = `slot type-${type === 'S' ? 'spot' : type === 'P' ? 'pillar' : type === 'E' ? 'entrance' : type === 'D' ? 'disabled' : type === 'U' ? 'unassigned' : 'space'}`;
+            
             if (type === 'S') {
                 const w = queue && queue.length > 0 ? queue.shift() : '';
                 if (w) { content = `<strong>${w.replace('-', '<br>')}</strong>`; className += ' filled'; }
                 else content = `<span style="color:#ccc">미배정</span>`;
             } else if (type === 'D') {
-                content = '<span class="icon-disabled">♿</span>비지정';
+                // C동 장애인 구역에 403호 고정 표기
+                if (dongName === 'C' && hasC403) {
+                    content = '<span class="icon-disabled">♿</span><strong>C<br>403호</strong>';
+                    className += ' filled';
+                } else {
+                    content = '<span class="icon-disabled">♿</span>비지정';
+                }
             } else if (type === 'U') content = '비지정';
             else if (type === 'P') content = '기둥';
             else if (type === 'E') content = '출입문';
+            
             return `<div class="${className}">${content}</div>`;
         };
-        const row = (layout, queue) => `<div class="parking-row">${layout.map(t => createSlot(t, queue)).join('')}</div>`;
+        
+        const row = (layout, queue, dongName = '') => `<div class="parking-row">${layout.map(t => createSlot(t, queue, dongName)).join('')}</div>`;
 
         container.innerHTML = `
             <div class="building-section"><div class="building-label">A동 필로티</div>
@@ -230,7 +244,7 @@
                 <div class="between-column"><div class="col-header">B동 구역</div>${createSlot('S', qB)}${createSlot('S', qB)}</div>
                 <div class="between-column"><div class="col-header">C동 구역</div>${createSlot('S', qC)}${createSlot('S', qC)}</div></div></div>
             <div class="building-section"><div class="building-label">C동 필로티</div>
-                ${row(['S', 'S', 'P', 'S', 'D', 'P', '_'], qC)}<div class="driveway-text">배차 통로</div>
+                ${row(['S', 'S', 'P', 'S', 'D', 'P', '_'], qC, 'C')}<div class="driveway-text">배차 통로</div>
                 ${row(['S', 'S', 'E', 'S', 'S'], qC)}</div>`;
     }
 
