@@ -30,7 +30,7 @@
         .slot.filled { background-color: #ebf8ff !important; border: 2px solid var(--accent) !important; color: var(--primary) !important; font-weight: bold; }
         .slot.is-unassigned { background-color: #f1f5f9 !important; border: 2px dashed #cbd5e0 !important; color: #94a3b8 !important; }
         .type-pillar { width: 40px; background: #95a5a6; color: white; border: none; }
-        .type-entrance { width: 100px; background: #3182ce; color: white; border: none; font-weight: bold; }
+        .type-entrance { width: 100px; background: #3182ce; color: white; border: none; font-weight: bold; font-size: 11px; }
         .type-disabled { background-color: #2b6cb0; color: white; border: none; font-weight: bold; }
         #adminControls { display: none; margin: 20px 0; padding: 20px; background: #fef2f2; border-radius: 10px; border: 2px solid var(--danger); }
         .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; margin: 5px; transition: 0.2s; }
@@ -38,7 +38,6 @@
         .save-db-btn { background: #2f855a; color: white; }
         .reset-db-btn { background: var(--danger); color: white; }
         .save-img-btn { background: #718096; color: white; width: 100%; margin-top: 20px; }
-        .btn:hover { opacity: 0.8; transform: translateY(-1px); }
     </style>
 </head>
 <body>
@@ -111,7 +110,7 @@
         const map = document.getElementById('mainMap');
         const makeRow = (layout, tag) => `<div class="parking-row">` + layout.map(t => {
             if(t === 'P') return `<div class="slot type-pillar">기둥</div>`;
-            if(t === 'E') return `<div class="slot type-entrance">🚪<br>문</div>`;
+            if(t === 'E') return `<div class="slot type-entrance">🚪<br>출입문</div>`;
             if(t === 'D') return `<div class="slot type-disabled">♿<br>장애인</div>`;
             return `<div class="slot" data-role="parking" data-tag="${tag}"><input type="checkbox" class="slot-toggle" checked onchange="updateStyle(this)"><strong class="slot-text">${tag}</strong></div>`;
         }).join('') + `</div>`;
@@ -133,7 +132,6 @@
                 document.getElementById('unitWrapper').style.display = 'flex';
                 document.querySelectorAll('.chk-draw').forEach(el => el.disabled = false);
                 document.querySelectorAll('.slot-toggle').forEach(el => el.style.display = 'block');
-                alert("관리자 모드 활성화");
             }
             clickCount = 0;
         }
@@ -164,7 +162,7 @@
     }
 
     function saveToFirebase() {
-        if (!confirm("이 결과를 서버에 저장하시겠습니까?")) return;
+        if (!confirm("이 상태(비지정 포함)를 서버에 저장하시겠습니까?")) return;
         const slotsData = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).map(s => ({
             text: s.querySelector('.slot-text').innerText,
             filled: s.classList.contains('filled'),
@@ -176,10 +174,10 @@
     }
 
     function resetDatabase() {
-        if (!confirm("정말로 모든 추첨 데이터를 삭제하고 초기화하시겠습니까?\n주민들 화면에서도 결과가 사라집니다.")) return;
+        if (!confirm("정말로 모든 데이터를 초기화하시겠습니까?")) return;
         db.ref('parking_result').remove().then(() => {
-            alert("서버 데이터가 초기화되었습니다.");
-            location.reload(); // 화면 새로고침
+            alert("초기화되었습니다.");
+            location.reload();
         });
     }
 
@@ -202,7 +200,6 @@
                 }
                 if (!isAdmin) document.getElementById('unitWrapper').style.display = 'none';
             } else {
-                // 데이터가 없을 때 기본 상태로 복구
                 slots.forEach(s => {
                     s.querySelector('.slot-text').innerText = s.dataset.tag;
                     s.classList.remove('filled', 'is-unassigned');
@@ -215,14 +212,19 @@
 
     function updateStyle(c) {
         const s = c.closest('.slot');
-        if (c.checked) s.classList.remove('is-unassigned');
-        else { s.classList.add('is-unassigned'); s.querySelector('.slot-text').innerText = "비지정"; }
+        if (c.checked) {
+            s.classList.remove('is-unassigned');
+            s.querySelector('.slot-text').innerText = s.dataset.tag;
+        } else {
+            s.classList.add('is-unassigned');
+            s.querySelector('.slot-text').innerText = "비지정";
+        }
     }
 
     function saveAsImage() {
         html2canvas(document.getElementById('printArea'), { scale: 2 }).then(canvas => {
             const a = document.createElement('a');
-            a.download = 'parking_result.png';
+            a.download = 'parking_map.png';
             a.href = canvas.toDataURL();
             a.click();
         });
