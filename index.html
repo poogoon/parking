@@ -25,7 +25,7 @@
         .label { position: absolute; top: -13px; left: 20px; padding: 3px 15px; font-size: 12px; border-radius: 4px; font-weight: bold; background: var(--primary); color: white; }
         .joint-label { background: var(--accent); }
         .parking-row { display: flex; justify-content: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
-        .slot { width: 85px; height: 110px; border: 1px solid #dcdde1; border-radius: 6px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; background: #fff; }
+        .slot { width: 85px; height: 110px; border: 1px solid #dcdde1; border-radius: 6px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; background: #fff; line-height: 1.4; }
         .slot-toggle { position: absolute; top: 6px; left: 6px; transform: scale(1.3); cursor: pointer; z-index: 20; display: none; }
         .slot.filled { background-color: #ebf8ff !important; border: 2px solid var(--accent) !important; color: var(--primary) !important; font-weight: bold; }
         .slot.is-unassigned { background-color: #f1f5f9 !important; border: 2px dashed #cbd5e0 !important; color: #94a3b8 !important; }
@@ -42,10 +42,10 @@
 </head>
 <body>
 
-<div id="loading" class="loading-overlay">데이터 동기화 중...</div>
+<div id="loading" class="loading-overlay">데이터를 동기화하는 중...</div>
 
 <div class="container">
-    <h1 onclick="handleAdminLogin()">편백나무 주차 구역 배정</h1>
+    <h1 id="mainTitle" onclick="handleAdminLogin()">편백나무 주차 구역 배정</h1>
     <div id="adminBadge" class="admin-badge">관리자 모드 활성화</div>
 
     <div id="unitWrapper" class="dong-wrapper">
@@ -72,7 +72,6 @@
 </div>
 
 <script>
-    // [확인 완료] 관리자님이 주신 실제 Firebase 설정값입니다.
     const firebaseConfig = {
         apiKey: "AIzaSyC0jloY1-k3bzz4HuPrmpL0wdtzHYMw-FE",
         databaseURL: "https://parking-bd6fa-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -127,14 +126,13 @@
 
     function handleAdminLogin() {
         if (++clickCount >= 5) {
-            if (prompt("비밀번호를 입력하세요.") === "1234") {
+            if (prompt("비밀번호") === "1234") {
                 isAdmin = true;
                 document.getElementById('adminControls').style.display = 'block';
                 document.getElementById('adminBadge').style.display = 'inline-block';
                 document.getElementById('unitWrapper').style.display = 'flex';
                 document.querySelectorAll('.chk-draw').forEach(el => el.disabled = false);
                 document.querySelectorAll('.slot-toggle').forEach(el => el.style.display = 'block');
-                alert("관리자님 환영합니다! 이제 모든 기능을 사용하실 수 있습니다.");
             }
             clickCount = 0;
         }
@@ -143,7 +141,7 @@
     function executeDraw() {
         let apps = Array.from(document.querySelectorAll('.chk-draw:checked')).map(e => ({ name: e.value, dong: e.dataset.dong }));
         let slots = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).filter(s => !s.classList.contains('is-unassigned'));
-        if (!apps.length) return alert("신청한 세대가 없습니다.");
+        if (!apps.length) return alert("신청 세대 없음");
 
         let shuffled = apps.sort(() => Math.random() - 0.5);
         let win = shuffled.slice(0, slots.length);
@@ -173,31 +171,32 @@
             un: s.classList.contains('is-unassigned')
         }));
         db.ref('parking_result').set({ slots: slotsData, report: document.getElementById('summaryArea').innerHTML })
-            .then(() => alert("서버에 성공적으로 저장되었습니다! 이제 주민들도 이 결과를 보게 됩니다."));
+            .then(() => alert("서버 저장 완료!"));
     }
 
     function loadFromFirebase() {
         document.getElementById('loading').style.display = 'flex';
-        db.ref('parking_result').once('value', s => {
+        db.ref('parking_result').on('value', s => { // once 대신 on 사용 (실시간 반영)
             const d = s.val();
             if (d && d.slots) {
                 const slots = document.querySelectorAll('.slot[data-role="parking"]');
                 d.slots.forEach((item, i) => {
                     if (slots[i]) {
                         slots[i].querySelector('.slot-text').innerText = item.text;
-                        if (item.filled) slots[i].classList.add('filled');
-                        if (item.un) slots[i].classList.add('is-unassigned');
+                        if (item.filled) slots[i].classList.add('filled'); else slots[i].classList.remove('filled');
+                        if (item.un) slots[i].classList.add('is-unassigned'); else slots[i].classList.remove('is-unassigned');
                     }
                 });
                 if (d.report) {
                     document.getElementById('summaryArea').innerHTML = d.report;
                     document.getElementById('summaryArea').style.display = 'block';
                 }
+                // 결과가 있으면 리스트 숨김
                 if (!isAdmin) document.getElementById('unitWrapper').style.display = 'none';
             }
             document.getElementById('loading').style.display = 'none';
-        }).catch(e => {
-            console.error(e);
+        }, e => {
+            console.error("데이터 불러오기 실패:", e);
             document.getElementById('loading').style.display = 'none';
         });
     }
@@ -210,9 +209,9 @@
 
     function saveAsImage() {
         document.getElementById('printTitle').style.display = 'block';
-        html2canvas(document.getElementById('printArea'), { backgroundColor: "#ffffff" }).then(canvas => {
+        html2canvas(document.getElementById('printArea')).then(canvas => {
             const a = document.createElement('a');
-            a.download = '주차배정결과.png';
+            a.download = 'result.png';
             a.href = canvas.toDataURL();
             a.click();
             document.getElementById('printTitle').style.display = 'none';
