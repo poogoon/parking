@@ -3,233 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>편백나무 주차 배정 시스템 (동기화 버전)</title>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <title>편백나무 주차 관리 시스템</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* 기존 디자인 스타일 유지 */
-        body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; text-align: center; background-color: #f4f7f9; margin: 0; padding: 15px; color: #333; }
-        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h1 { color: #2c3e50; margin-bottom: 8px; font-size: 1.5rem; letter-spacing: -0.5px; }
-        .desc { font-size: 13px; color: #7f8c8d; margin-bottom: 25px; }
-        .dong-wrapper { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 25px; text-align: left; }
-        .dong-column { flex: 1; min-width: 280px; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dcdde1; box-sizing: border-box; }
-        .dong-title { font-weight: bold; border-bottom: 2px solid #34495e; padding-bottom: 10px; margin-bottom: 15px; text-align: center; color: #2c3e50; font-size: 15px; }
-        .list-item { display: flex; align-items: center; margin-bottom: 9px; font-size: 14px; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
-        .list-item:hover { background: #f1f2f6; }
-        .list-item input { margin-right: 10px; width: 17px; height: 17px; cursor: pointer; }
-        .list-item label { cursor: pointer; width: 100%; }
-        .config-area { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #edeff1; }
-        .input-group { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-weight: bold; font-size: 14px; color: #444; }
-        .input-item { background: white; padding: 8px 15px; border-radius: 6px; border: 1px solid #ced4da; display: flex; align-items: center; gap: 8px; }
-        input[type="number"] { width: 45px; text-align: center; border: 1px solid #ddd; padding: 4px; border-radius: 4px; font-weight: bold; outline: none; }
-        button { border: none; padding: 16px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 15px; color: white; transition: background 0.3s; }
-        .btn-draw { background-color: #34495e; box-shadow: 0 4px 6px rgba(52, 73, 94, 0.2); }
-        .btn-draw:hover { background-color: #2c3e50; }
-        .btn-print { background-color: #27ae60; display: none; width: 48%; display: inline-block; } 
-        .btn-save { background-color: #e67e22; display: none; width: 48%; display: inline-block; }
-        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
-        .process-bar { width: 200px; height: 4px; background: #eee; border-radius: 2px; position: relative; overflow: hidden; margin-bottom: 20px; }
-        .process-progress { width: 0%; height: 100%; background: #34495e; position: absolute; }
-        .loading-text { font-size: 1.1rem; font-weight: bold; color: #2c3e50; }
-        #resultArea { display: none; margin-top: 35px; border: 2px solid #2c3e50; padding: 30px; border-radius: 8px; background-color: white; }
-        .result-header { font-size: 22px; font-weight: bold; border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .result-date { font-size: 14px; font-weight: normal; color: #7f8c8d; }
-        .map-container { display: flex; flex-direction: column; gap: 25px; align-items: center; }
-        .building-section { width: 100%; border: 1.5px solid #2c3e50; border-radius: 8px; padding: 25px 15px; position: relative; background: #fff; box-sizing: border-box; }
-        .building-label { position: absolute; top: -13px; left: 20px; background: #2c3e50; color: white; padding: 3px 15px; font-size: 12px; border-radius: 4px; font-weight: bold; }
-        .parking-row { display: flex; justify-content: center; gap: 6px; margin: 6px 0; align-items: center; flex-wrap: nowrap; }
-        .driveway-text { font-size: 11px; color: #bdc3c7; margin: 12px 0; letter-spacing: 12px; font-weight: bold; text-align: center; width: 100%; }
-        .between-section { width: 100%; background-color: #f9fbfd; border-radius: 8px; padding: 18px; display: flex; justify-content: center; align-items: center; position: relative; box-sizing: border-box; border: 1px dashed #3498db; }
-        .between-label { position: absolute; left: 12px; font-size: 12px; font-weight: bold; color: #3498db; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px; }
-        .between-content { display: flex; gap: 50px; justify-content: center; align-items: center; }
-        .between-column { display: flex; flex-direction: column; gap: 10px; align-items: center; }
-        .col-header { font-size: 11px; font-weight: bold; padding: 2px 10px; border-radius: 3px; background: #3498db; color: white; margin-bottom: 4px; }
-        .slot { width: 65px; height: 85px; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; text-align: center; position: relative; border: 1px solid #dcdde1; overflow: hidden; }
-        .slot strong { display: block; font-size: 13px; width: 100%; line-height: 1.3; color: #2c3e50; }
-        .type-disabled { background-color: #edf2ff; border: 2px solid #3f51b5; color: #3f51b5; font-weight: bold; }
-        .type-disabled .icon-disabled { font-size: 29px; margin-bottom: 2px; display: block; }
-        .type-spot.filled { background-color: #f1f9ff; border-color: #3498db; font-weight: bold; }
-        .type-pillar { background-color: #95a5a6; color: white; width: 30px; height: 85px; font-size: 10px; border: none; writing-mode: vertical-lr; letter-spacing: 2px; }
-        .type-entrance { background-color: #ecf0f1; border: 2px solid #bdc3c7; color: #7f8c8d; font-weight: bold; width: 80px; font-size: 13px; }
-        .type-unassigned { background-color: #fdfdfd; border: 1.5px dashed #bdbdbd; color: #9e9e9e; font-weight: bold; }
-        .unassigned-label { color: #e74c3c !important; font-weight: bold; }
-        .footer { margin-top: 60px; text-align: center; font-weight: bold; font-size: 16px; color: #2c3e50; border-top: 1px solid #eee; padding-top: 30px; }
-        @media print { .no-print { display: none !important; } }
+        :root { --primary: #34495e; --accent: #3182ce; --danger: #e53e3e; --joint: #f8fafc; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; background-color: #f4f7f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        h1 { cursor: pointer; user-select: none; margin-bottom: 5px; }
+        .admin-badge { display: none; color: #3182ce; font-size: 14px; font-weight: bold; margin-bottom: 20px; border: 1px solid #3182ce; display: inline-block; padding: 2px 10px; border-radius: 20px; margin-top: 10px; }
+
+        .summary-box { display: none; background: #fff; border: 3px solid var(--accent); padding: 25px; border-radius: 15px; margin: 20px 0 40px 0; text-align: left; }
+        .wait-list { color: var(--danger); background: #fff5f5; padding: 18px; border-radius: 8px; border: 1px solid #fed7d7; margin-top: 10px; font-weight: bold; line-height: 1.6; }
+        .wait-name { color: #000; font-weight: 800; margin-left: 4px; margin-right: 12px; }
+
+        /* 세대 리스트 스타일 */
+        .dong-wrapper { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
+        .dong-column { flex: 1; min-width: 300px; background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .dong-title { font-weight: bold; margin-bottom: 10px; padding: 8px; background: #f8fafc; border-radius: 6px; border-bottom: 2px solid var(--primary); }
+        .list-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 13px; padding: 4px 10px; border-radius: 4px; border: 1px solid #f1f5f9; }
+
+        /* 지도 스타일 */
+        .map-section { margin: 20px 0; padding: 20px; background: #fdfdfd; border: 1px solid #cbd5e0; border-radius: 15px; }
+        .map-container { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+        .building-box { width: 100%; border: 2px solid var(--primary); border-radius: 10px; padding: 45px 15px 20px; position: relative; background: white; box-sizing: border-box; }
+        .joint-box { width: 100%; border: 1px dashed var(--accent); border-radius: 10px; padding: 25px 15px 15px; position: relative; background: var(--joint); box-sizing: border-box; }
+        .label { position: absolute; top: -13px; left: 20px; padding: 3px 15px; font-size: 12px; border-radius: 4px; font-weight: bold; background: var(--primary); color: white; }
+        .joint-label { background: var(--accent); }
+
+        .parking-row { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
+        .slot { width: 85px; height: 110px; border: 1px solid #dcdde1; border-radius: 6px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; background: #fff; }
+        .slot-toggle { position: absolute; top: 6px; left: 6px; transform: scale(1.3); cursor: pointer; z-index: 20; display: none; }
+        .slot.is-unassigned { background-color: #f1f5f9 !important; border: 2px dashed #cbd5e0 !important; color: #94a3b8 !important; }
+        .slot.filled { background-color: #ebf8ff !important; border: 2px solid var(--accent) !important; color: var(--primary) !important; font-weight: bold; }
+
+        .type-pillar { width: 40px; background: #95a5a6; color: white; border: none; writing-mode: vertical-lr; }
+        .type-entrance { width: 100px; background: #3182ce; color: white; border: none; font-weight: bold; }
+        .type-disabled { background-color: #2b6cb0; color: white; border: none; font-weight: bold; }
+
+        #adminControls { display: none; margin: 20px 0; padding: 20px; background: #eef2f7; border-radius: 10px; border: 2px solid var(--accent); }
+        .btn { padding: 15px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; margin: 5px; }
+        .draw-btn { background: var(--primary); color: white; flex: 1; }
+        .save-db-btn { background: #2f855a; color: white; }
+        .save-img-btn { background: #718096; color: white; width: 100%; margin-top: 20px; }
+        .driveway { font-size: 10px; color: #cbd5e0; letter-spacing: 12px; margin: 5px 0; font-weight: bold; }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 1000; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="loadingOverlay">
-    <div class="process-bar"><div id="progressBar" class="process-progress"></div></div>
-    <div class="loading-text" id="loadingStatus">공정 배정 엔진 가동 중...</div>
-</div>
+<div id="loading" class="loading-overlay">서버 데이터를 불러오는 중입니다...</div>
 
 <div class="container">
-    <h1 class="no-print">편백나무 주차 구역 배정 시스템</h1>
-    <p class="desc no-print">오늘 날짜를 기준으로 동기화되어 모든 입주민이 동일한 결과를 보게 됩니다.</p>
+    <h1 onclick="handleAdminLogin()">편백나무 주차 구역 배정</h1>
+    <div id="adminBadge" style="display:none;" class="admin-badge">관리자 모드 접속 중</div>
 
-    <div class="dong-wrapper no-print">
-        <div id="column-A" class="dong-column"><div class="dong-title">A동 (대상 세대)</div></div>
-        <div id="column-B" class="dong-column"><div class="dong-title">B동 (대상 세대)</div></div>
-        <div id="column-C" class="dong-column"><div class="dong-title">C동 (대상 세대)</div></div>
+    <div id="unitWrapper" class="dong-wrapper">
+        <div class="dong-column"><div class="dong-title">A동 세대</div><div id="list-A"></div></div>
+        <div class="dong-column"><div class="dong-title">B동 세대</div><div id="list-B"></div></div>
+        <div class="dong-column"><div class="dong-title">C동 세대</div><div id="list-C"></div></div>
     </div>
 
-    <div class="config-area no-print">
-        <div class="input-group">
-            <div class="input-item"><span>A동 배정수</span><input type="number" id="limitA" value="9"></div>
-            <div class="input-item"><span>B동 배정수</span><input type="number" id="limitB" value="10"></div>
-            <div class="input-item"><span>C동 배정수</span><input type="number" id="limitC" value="9"></div>
-        </div>
-        <button class="btn-draw" onclick="startOfficialDraw()">주차 구역 배정 추첨 시작</button>
-    </div>
-
-    <div id="resultArea">
-        <div class="result-header">
-            <span>주차 구역 배정 결과 보고서</span>
-            <span class="result-date" id="printDate"></span>
-        </div>
-        <div class="map-container" id="mapContainer"></div>
-        <div class="footer">
-            <p>본 결과는 금일 날짜를 시드로 한 자동 추첨 시스템을 통해 공정하게 결정되었습니다.</p>
-            <br><p>편백나무 타운하우스 입주민 대표 (인)</p>
+    <div id="printArea">
+        <div id="summaryArea" class="summary-box"></div>
+        <div class="map-section">
+            <h2 id="printTitle" style="display:none; margin-bottom:20px;">🚗 주차 구역 배정 결과</h2>
+            <div class="map-container" id="mainMap"></div>
         </div>
     </div>
 
-    <div class="no-print" style="margin-top:25px; display:flex; gap:12px; justify-content:center;">
-        <button id="printBtn" class="btn-print" onclick="window.print()">결과 문서 출력</button>
-        <button id="saveBtn" class="btn-save" onclick="saveAsImage()">결과 이미지 저장</button>
+    <div id="adminControls">
+        <h4 style="margin-top:0;">🛠️ 관리자 도구</h4>
+        <div style="display: flex;">
+            <button class="btn draw-btn" onclick="executeDraw()">🎲 추첨 시작</button>
+            <button class="btn save-db-btn" onclick="saveToFirebase()">💾 서버에 결과 저장</button>
+        </div>
+        <button class="btn save-img-btn" onclick="saveAsImage()">📸 A4 이미지 다운로드</button>
     </div>
 </div>
 
 <script>
-    // 🎲 시드 기반 무작위 숫자 생성기 (동기화의 핵심)
-    function seededRandom(seed) {
-        return function() {
-            seed = (seed * 9301 + 49297) % 233280;
-            return seed / 233280;
-        };
+    // [중요] 아래 3가지 값을 관리자님의 Firebase 설정값으로 바꾸세요!
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        databaseURL: "YOUR_DATABASE_URL",
+        projectId: "YOUR_PROJECT_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    let isAdmin = false;
+    let clickCount = 0;
+    const adminPass = "1234"; // 비밀번호
+
+    // 1. 페이지 시작
+    function init() {
+        createUnitList();
+        renderMap();
+        loadFromFirebase();
     }
 
-    function generateList() {
-        const columns = { 'A': document.getElementById('column-A'), 'B': document.getElementById('column-B'), 'C': document.getElementById('column-C') };
-        const unchecked = ['A동 201호', 'A동 202호', 'A동 401호', 'C동 202호', 'C동 502호'];
-        const add = (col, full, label, val) => {
-            const isChecked = unchecked.includes(full) ? '' : 'checked';
-            const div = document.createElement('div');
-            div.className = 'list-item';
-            div.innerHTML = `<label><input type="checkbox" ${isChecked} value="${val}">${label}</label>`;
-            col.appendChild(div);
-        };
-        for(let f=2; f<=5; f++) for(let r=1; r<=3; r++) add(columns['A'], `A동 ${f}0${r}호`, `${f}0${r}호`, `A-${f}0${r}호`);
-        for(let f=2; f<=5; f++) for(let r=1; r<=(f<=3?3:2); r++) add(columns['B'], `B동 ${f}0${r}호`, `${f}0${r}호`, `B-${f}0${r}호`);
-        for(let f=2; f<=5; f++) for(let r=1; r<=(f<=4?3:2); r++) add(columns['C'], `C동 ${f}0${r}호`, `${f}0${r}호`, `C-${f}0${r}호`);
-    }
-    generateList();
+    // 2. 세대 리스트 생성
+    function createUnitList() {
+        const skipUnits = ['A동 201호', 'A동 202호', 'A동 401호', 'C동 202호', 'C동 502호'];
+        const fixedUnits = ['B동 302호', 'C동 403호'];
 
-    function startOfficialDraw() {
-        const getChecked = (dong) => Array.from(document.querySelectorAll(`#column-${dong} input:checked`)).map(e => e.value);
-        const candidates = { 'A': getChecked('A'), 'B': getChecked('B'), 'C': getChecked('C') };
-        if (candidates.A.length + candidates.B.length + candidates.C.length === 0) return alert("대상 세대를 선택해 주세요.");
-
-        const overlay = document.getElementById('loadingOverlay');
-        const progressBar = document.getElementById('progressBar');
-        overlay.style.display = 'flex';
-        
-        let p = 0;
-        const interval = setInterval(() => {
-            p += 5;
-            progressBar.style.width = p + "%";
-            if(p >= 100) {
-                clearInterval(interval);
-                overlay.style.display = 'none';
-                showOfficialResult(candidates);
+        ['A','B','C'].forEach(dong => {
+            const container = document.getElementById('list-' + dong);
+            container.innerHTML = "";
+            for(let f=2; f<=5; f++){
+                let rooms = (dong === 'B' && f > 3) || (dong === 'C' && f === 5) ? 2 : 3;
+                for(let r=1; r<=rooms; r++){
+                    let name = `${dong}동 ${f}0${r}호`;
+                    let isChecked = !skipUnits.includes(name) && !fixedUnits.includes(name);
+                    container.innerHTML += `
+                        <div class="list-item">
+                            <label><input type="checkbox" class="chk-draw" ${isChecked?'checked':''} value="${name}" data-dong="${dong}" disabled> ${f}0${r}호</label>
+                        </div>`;
+                }
             }
-        }, 50);
+        });
     }
 
-    function showOfficialResult(candidates) {
-        const now = new Date();
-        // 🗓️ 오늘 날짜(YYYYMMDD)를 시드로 사용하여 결과 고정
-        const seedValue = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
-        const rng = seededRandom(seedValue);
+    // 3. 지도 그리기
+    function renderMap() {
+        const map = document.getElementById('mainMap');
+        const makeRow = (layout, dongTag) => `<div class="parking-row">` + layout.map(t => {
+            if(t === 'P') return `<div class="slot type-pillar">기둥</div>`;
+            if(t === 'E') return `<div class="slot type-entrance">🚪<br>출입문</div>`;
+            if(t === 'D') return `<div class="slot type-disabled">♿<br>장애인</div>`;
+            return `<div class="slot" data-role="parking" data-dong="${dongTag}">
+                        <input type="checkbox" class="slot-toggle" checked onchange="updateSlotStyle(this)">
+                        <strong class="slot-text">${dongTag}구역</strong>
+                    </div>`;
+        }).join('') + `</div>`;
 
-        const limits = {
-            'A': parseInt(document.getElementById('limitA').value) || 0,
-            'B': parseInt(document.getElementById('limitB').value) || 0,
-            'C': parseInt(document.getElementById('limitC').value) || 0
-        };
+        map.innerHTML = `
+            <div class="building-box"><div class="label">A동 필로티</div>${makeRow(['S','S','P','S','E','S','P','S'], 'A')}<div class="driveway">DRIVEWAY</div>${makeRow(['S','S','P','S','P','D'], 'A')}</div>
+            <div class="joint-box"><div class="label joint-label">A-B동 공동구역</div>${makeRow(['D', 'S'], 'AB')}${makeRow(['S', 'S'], 'AB')}</div>
+            <div class="building-box"><div class="label">B동 필로티</div>${makeRow(['S','S','E','S','S'], 'B')}<div class="driveway">DRIVEWAY</div>${makeRow(['S','S','P','S','P','S','S'], 'B')}</div>
+            <div class="joint-box"><div class="label joint-label">B-C동 공동구역</div>${makeRow(['S', 'S'], 'BC')}${makeRow(['S', 'S'], 'BC')}</div>
+            <div class="building-box"><div class="label">C동 필로티</div>${makeRow(['S','S','E','S','S'], 'C')}<div class="driveway">DRIVEWAY</div>${makeRow(['D','P','S','S'], 'C')}</div>`;
+    }
 
-        const winners = {};
-        ['A', 'B', 'C'].forEach(d => {
-            // 시드 기반 셔플
-            winners[d] = candidates[d]
-                .map(value => ({ value, sort: rng() }))
-                .sort((a, b) => a.sort - b.sort)
-                .map(({ value }) => value)
-                .slice(0, limits[d]);
+    // 4. 관리자 로그인
+    function handleAdminLogin() {
+        clickCount++;
+        if (clickCount >= 5) {
+            const pw = prompt("관리자 비밀번호를 입력하세요.");
+            if (pw === adminPass) {
+                isAdmin = true;
+                document.getElementById('adminControls').style.display = 'block';
+                document.getElementById('adminBadge').style.display = 'inline-block';
+                document.getElementById('unitWrapper').style.display = 'flex';
+                document.querySelectorAll('.slot-toggle').forEach(el => el.style.display = 'block');
+                document.querySelectorAll('.chk-draw').forEach(el => el.disabled = false);
+                alert("관리자 모드 활성화됨!");
+            }
+            clickCount = 0;
+        }
+    }
+
+    // 5. 서버에서 가져오기
+    function loadFromFirebase() {
+        document.getElementById('loading').style.display = 'flex';
+        db.ref('parking_result').once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.slots) {
+                const slots = document.querySelectorAll('.slot[data-role="parking"]');
+                data.slots.forEach((item, idx) => {
+                    const s = slots[idx];
+                    if (s) {
+                        s.querySelector('.slot-text').innerText = item.text;
+                        if(item.isFilled) s.classList.add('filled');
+                        if(item.isUnassigned) s.classList.add('is-unassigned');
+                    }
+                });
+                document.getElementById('summaryArea').innerHTML = data.report;
+                document.getElementById('summaryArea').style.display = 'block';
+                if(!isAdmin) document.getElementById('unitWrapper').style.display = 'none';
+            }
+            document.getElementById('loading').style.display = 'none';
+        }).catch(() => { document.getElementById('loading').style.display = 'none'; });
+    }
+
+    // 6. 추첨 로직
+    function executeDraw() {
+        let allApps = Array.from(document.querySelectorAll('.chk-draw:checked')).map(e => ({ name: e.value, dong: e.dataset.dong }));
+        let activeSlots = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).filter(s => !s.classList.contains('is-unassigned'));
+        if (allApps.length === 0) return alert("신청 세대가 없습니다.");
+        
+        let shuffledApps = allApps.sort(() => Math.random() - 0.5);
+        let winners = (allApps.length > activeSlots.length) ? shuffledApps.slice(allApps.length - activeSlots.length) : [...allApps];
+        let losers = (allApps.length > activeSlots.length) ? shuffledApps.slice(0, allApps.length - activeSlots.length) : [];
+
+        activeSlots.forEach(s => { s.querySelector('.slot-text').innerText = ""; s.classList.remove('filled'); });
+
+        let appsByDong = { A: winners.filter(a => a.dong === 'A'), B: winners.filter(a => a.dong === 'B'), C: winners.filter(a => a.dong === 'C') };
+        let slots = { A: activeSlots.filter(s => s.dataset.dong === 'A'), B: activeSlots.filter(s => s.dataset.dong === 'B'), C: activeSlots.filter(s => s.dataset.dong === 'C'), AB: activeSlots.filter(s => s.dataset.dong === 'AB'), BC: activeSlots.filter(s => s.dataset.dong === 'BC') };
+
+        ['A','B','C'].forEach(d => {
+            slots[d].forEach(s => { if(appsByDong[d].length > 0) { const p = appsByDong[d].shift(); s.querySelector('.slot-text').innerText = p.name.replace('동 ', '동\n'); s.classList.add('filled'); } });
         });
 
-        document.getElementById('printDate').innerText = `배정 기준일: ${now.toLocaleDateString()}`;
-        document.getElementById('resultArea').style.display = 'block';
-        document.getElementById('printBtn').style.display = 'inline-block';
-        document.getElementById('saveBtn').style.display = 'inline-block';
+        let leftovers = [...appsByDong.A, ...appsByDong.B, ...appsByDong.C];
+        [...slots.AB, ...slots.BC].forEach(s => {
+            if(leftovers.length > 0) { const p = leftovers.shift(); s.querySelector('.slot-text').innerText = p.name.replace('동 ', '동\n'); s.classList.add('filled'); }
+            else { s.querySelector('.slot-text').innerHTML = '<span style="color:#cbd5e0">공석</span>'; }
+        });
 
-        renderOfficialMap(winners);
-        window.scrollTo({ top: document.getElementById('resultArea').offsetTop - 20, behavior: 'smooth' });
+        const sArea = document.getElementById('summaryArea');
+        sArea.style.display = 'block';
+        const loserHtml = losers.map((l, i) => `[${i+1}순위] <span class="wait-name">${l.name}</span>`).join(' ');
+        sArea.innerHTML = `<h3>📊 추첨 결과 리포트</h3><p>• 구역: ${activeSlots.length}개 | 신청: ${allApps.length}세대</p><p>• 당첨: ${winners.length}세대</p>${losers.length > 0 ? `<div class="wait-list">⚠️ 미당첨 대기 명단:<br>${loserHtml}</div>` : ''}`;
     }
 
-    function renderOfficialMap(winners) {
-        const container = document.getElementById('mapContainer');
-        container.innerHTML = '';
-        const hasC403 = winners.C.includes('C-403호');
-        const qA = [...winners.A]; const qB = [...winners.B]; 
-        const qC = winners.C.filter(name => name !== 'C-403호');
-
-        const createSlot = (type, queue, dongName = '') => {
-            let content = '';
-            let className = `slot type-${type === 'S' ? 'spot' : type === 'P' ? 'pillar' : type === 'E' ? 'entrance' : type === 'D' ? 'disabled' : type === 'U' ? 'unassigned' : 'space'}`;
-            if (type === 'S') {
-                const w = queue && queue.length > 0 ? queue.shift() : '';
-                if (w) { content = `<strong>${w.replace('-', '<br>')}</strong>`; className += ' filled'; }
-                else content = `<span class="unassigned-label">미배정</span>`; 
-            } else if (type === 'D') {
-                if (dongName === 'C' && hasC403) { content = '<span class="icon-disabled">♿</span><strong>C<br>403호</strong>'; className += ' filled'; }
-                else content = '<span class="icon-disabled">♿</span>비지정';
-            } else if (type === 'U') content = '비지정';
-            else if (type === 'P') content = '기둥';
-            else if (type === 'E') content = '출입문';
-            return `<div class="${className}">${content}</div>`;
-        };
-        
-        const row = (layout, queue, dongName = '') => `<div class="parking-row">${layout.map(t => createSlot(t, queue, dongName)).join('')}</div>`;
-
-        container.innerHTML = `
-            <div class="building-section"><div class="building-label">A동 필로티</div>
-                ${row(['D', 'P', 'U', 'P', 'S', 'S'], qA)}<div class="driveway-text">배차 통로</div>
-                ${row(['S', 'P', 'S', 'E', 'U', 'P', 'S', 'S'], qA)}</div>
-            <div class="between-section"><div class="between-label">A-B 사이</div><div class="between-content">
-                <div class="between-column"><div class="col-header">A동 구역</div>${createSlot('S', qA)}${createSlot('S', qA)}</div>
-                <div class="between-column"><div class="col-header">A동 구역</div>${createSlot('S', qA)}${createSlot('D', null)}</div></div></div>
-            <div class="building-section"><div class="building-label">B동 필로티</div>
-                ${row(['S', 'S', 'P', 'U', 'P', 'S', 'S'], qB)}<div class="driveway-text">배차 통로</div>
-                ${row(['S', 'S', 'E', 'U', 'S'], qB)}</div>
-            <div class="between-section"><div class="between-label">B-C 사이</div><div class="between-content">
-                <div class="between-column"><div class="col-header">B동 구역</div>${createSlot('S', qB)}${createSlot('S', qB)}</div>
-                <div class="between-column"><div class="col-header">C동 구역</div>${createSlot('S', qB)}${createSlot('S', qC)}</div></div></div>
-            <div class="building-section"><div class="building-label">C동 필로티</div>
-                ${row(['S', 'S', 'P', 'S', 'D', 'P', '_'], qC, 'C')}<div class="driveway-text">배차 통로</div>
-                ${row(['S', 'S', 'E', 'S', 'S'], qC)}</div>`;
+    // 7. 서버 저장
+    function saveToFirebase() {
+        if (!confirm("결과를 서버에 저장할까요?")) return;
+        const slotsData = [];
+        document.querySelectorAll('.slot[data-role="parking"]').forEach((s, idx) => {
+            slotsData.push({ idx: idx, text: s.querySelector('.slot-text').innerText, isFilled: s.classList.contains('filled'), isUnassigned: s.classList.contains('is-unassigned') });
+        });
+        db.ref('parking_result').set({ slots: slotsData, report: document.getElementById('summaryArea').innerHTML }).then(() => alert("저장 완료!"));
     }
 
+    // 8. 이미지 저장
     function saveAsImage() {
-        const area = document.getElementById('resultArea');
-        html2canvas(area, { scale: 2 }).then(canvas => {
+        const area = document.getElementById('printArea');
+        document.getElementById('printTitle').style.display = 'block';
+        html2canvas(area, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
             const link = document.createElement('a');
-            link.download = `편백나무_주차배정_최종결과.png`;
+            link.download = '주차배정결과.png';
             link.href = canvas.toDataURL();
             link.click();
+            document.getElementById('printTitle').style.display = 'none';
         });
     }
+
+    function updateSlotStyle(chk) {
+        const slot = chk.closest('.slot');
+        const text = slot.querySelector('.slot-text');
+        const dong = slot.getAttribute('data-dong');
+        if (chk.checked) { slot.classList.remove('is-unassigned'); text.innerText = `${dong}구역`; }
+        else { slot.classList.add('is-unassigned'); text.innerText = "비지정석"; }
+    }
+
+    init();
 </script>
 </body>
 </html>
