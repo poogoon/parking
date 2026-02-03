@@ -62,7 +62,7 @@
     <div id="adminControls">
         <p style="font-weight: bold; color: var(--danger); margin-bottom: 10px;">🛠️ 관리자 제어판</p>
         <div style="display: flex; justify-content: center; flex-wrap: wrap;">
-            <button class="btn draw-btn" onclick="executeDraw()">🎲 추첨 시작</button>
+            <button class="btn draw-btn" onclick="executeDraw()">🎲 규칙대로 추첨</button>
             <button class="btn save-db-btn" onclick="saveToFirebase()">💾 서버에 결과 저장</button>
             <button class="btn reset-db-btn" onclick="resetDatabase()">🧹 서버 데이터 초기화</button>
         </div>
@@ -138,31 +138,68 @@
     }
 
     function executeDraw() {
-        let apps = Array.from(document.querySelectorAll('.chk-draw:checked')).map(e => ({ name: e.value, dong: e.dataset.dong }));
-        let slots = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).filter(s => !s.classList.contains('is-unassigned'));
-        if (!apps.length) return alert("신청 세대가 없습니다.");
+        // 1. 신청 세대 분리 및 랜덤 셔플
+        const getApps = (dong) => Array.from(document.querySelectorAll(`.chk-draw[data-dong="${dong}"]:checked`))
+                                     .map(e => e.value).sort(() => Math.random() - 0.5);
+        let appsA = getApps('A');
+        let appsB = getApps('B');
+        let appsC = getApps('C');
 
-        let shuffled = apps.sort(() => Math.random() - 0.5);
-        let win = shuffled.slice(0, slots.length);
-        let lose = shuffled.slice(slots.length);
+        // 2. 구역 슬롯 확보 (비지정 제외)
+        const getSlots = (tag) => Array.from(document.querySelectorAll(`.slot[data-tag="${tag}"]`))
+                                     .filter(s => !s.classList.contains('is-unassigned'));
+        let slotsA = getSlots('A');
+        let slotsB = getSlots('B');
+        let slotsC = getSlots('C');
+        let slotsAB = getSlots('AB');
+        let slotsBC = getSlots('BC');
 
-        slots.forEach(s => { s.querySelector('.slot-text').innerText = ""; s.classList.remove('filled'); });
-
-        win.forEach((p, i) => {
-            if (slots[i]) {
-                slots[i].querySelector('.slot-text').innerText = p.name.replace('동 ', '동\n');
-                slots[i].classList.add('filled');
-            }
+        // 모든 슬롯 초기화
+        document.querySelectorAll('.slot[data-role="parking"]').forEach(s => {
+            s.querySelector('.slot-text').innerText = s.dataset.tag;
+            s.classList.remove('filled');
         });
 
+        // 결과 저장용
+        let results = [];
+        let losers = [];
+
+        // --- 배정 로직 시작 ---
+
+        // [규칙 1] 각 동 전용 필로티 먼저 채우기
+        const fillDirect = (apps, slots) => {
+            while(apps.length > 0 && slots.length > 0) {
+                let p = apps.shift();
+                let s = slots.shift();
+                s.querySelector('.slot-text').innerText = p.replace('동 ', '동\n');
+                s.classList.add('filled');
+            }
+        };
+        fillDirect(appsA, slotsA);
+        fillDirect(appsB, slotsB);
+        fillDirect(appsC, slotsC);
+
+        // [규칙 2] A-B 공동구역: A동 먼저 채우고 남은 자리에 B동
+        fillDirect(appsA, slotsAB);
+        fillDirect(appsB, slotsAB);
+
+        // [규칙 3] B-C 공동구역: C동 먼저 채우고 남은 자리에 B동
+        fillDirect(appsC, slotsBC);
+        fillDirect(appsB, slotsBC);
+
+        // 남은 세대는 낙첨자(대기자)
+        losers = [...appsA, ...appsB, ...appsC];
+
+        // 4. 리포트 출력
         const sArea = document.getElementById('summaryArea');
         sArea.style.display = 'block';
-        sArea.innerHTML = `<h3>📊 추첨 완료 리포트</h3><p>• 가용 구역: ${slots.length} | 신청: ${apps.length}</p><p>• 당첨: ${win.length} 세대</p>` + 
-            (lose.length ? `<div style="color:red; font-weight:bold; margin-top:10px;">대기자 순번: ${lose.map(l => l.name).join(', ')}</div>` : "");
+        sArea.innerHTML = `<h3>📊 구역별 추첨 결과</h3>` +
+            `<p>• 당첨 세대 수: ${document.querySelectorAll('.slot.filled').length} 세대</p>` +
+            (losers.length ? `<div style="color:red; font-weight:bold; margin-top:10px;">⚠️ 대기 순번: ${losers.join(', ')}</div>` : "");
     }
 
     function saveToFirebase() {
-        if (!confirm("이 상태(비지정 포함)를 서버에 저장하시겠습니까?")) return;
+        if (!confirm("이 결과를 서버에 저장하시겠습니까?")) return;
         const slotsData = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).map(s => ({
             text: s.querySelector('.slot-text').innerText,
             filled: s.classList.contains('filled'),
@@ -185,7 +222,6 @@
         db.ref('parking_result').on('value', s => {
             const d = s.val();
             const slots = document.querySelectorAll('.slot[data-role="parking"]');
-            
             if (d && d.slots) {
                 d.slots.forEach((item, i) => {
                     if (slots[i]) {
@@ -199,13 +235,6 @@
                     document.getElementById('summaryArea').style.display = 'block';
                 }
                 if (!isAdmin) document.getElementById('unitWrapper').style.display = 'none';
-            } else {
-                slots.forEach(s => {
-                    s.querySelector('.slot-text').innerText = s.dataset.tag;
-                    s.classList.remove('filled', 'is-unassigned');
-                });
-                document.getElementById('summaryArea').style.display = 'none';
-                if (!isAdmin) document.getElementById('unitWrapper').style.display = 'flex';
             }
         });
     }
