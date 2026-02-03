@@ -11,88 +11,113 @@
         :root { --primary: #34495e; --accent: #3182ce; --danger: #e53e3e; --joint-bg: #f8fafc; }
         body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: #f4f7f9; margin: 0; padding: 15px; color: #333; }
         
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
-        h1 { margin: 0 0 10px 0; font-size: 1.4rem; text-align: center; color: var(--primary); cursor: pointer;}
-        
-        /* 세대 명단 (관리자용 - 평소 숨김) */
-        .dong-wrapper { display: none; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .dong-column { flex: 1; min-width: 120px; background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
-        .list-item { border-bottom: 1px solid #eee; padding: 2px 0; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        h1 { margin: 0 0 15px 0; font-size: 1.3rem; text-align: center; color: var(--primary); }
+
+        /* 관리자용 명단 (평소 숨김) */
+        .dong-wrapper { display: none; gap: 5px; margin-bottom: 20px; flex-wrap: wrap; }
+        .dong-column { flex: 1 1 100%; background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
+        .list-item { border-bottom: 1px solid #eee; padding: 5px 0; display: flex; align-items: center; }
+        .list-item label { width: 100%; display: block; }
         
         /* 맵 섹션 */
-        .map-section { display: flex; flex-direction: column; gap: 25px; align-items: center; margin-top: 20px; }
-
-        /* 구역 박스 (제목 문제 수정됨) */
-        .zone-container {
-            width: 100%;
-            max-width: 600px;
-            padding: 20px 10px; /* 내부 여백 확보 */
-            border-radius: 12px;
-            box-sizing: border-box;
-            background: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* 내부 요소 가운데 정렬 */
-            
-            /* 모바일 대응 */
-            overflow-x: auto; 
-            -webkit-overflow-scrolling: touch;
+        .map-section { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 30px; 
+            margin-top: 10px; 
+            /* align-items: center;  <-- 이거 제거함 (왼쪽 잘림 원인) */
         }
 
+        /* 구역 박스 */
+        .zone-container {
+            width: 100%;
+            box-sizing: border-box;
+            background: #fff;
+            padding: 20px 5px;
+            border-radius: 12px;
+            
+            /* 가로 스크롤 설정 */
+            overflow-x: auto; 
+            white-space: nowrap; 
+            -webkit-overflow-scrolling: touch;
+            
+            /* 내부 정렬 */
+            text-align: center; 
+        }
+
+        /* 건물과 공동구역 스타일 차이 */
         .style-building { border: 2px solid var(--primary); }
         .style-joint { border: 2px dashed var(--accent); background-color: var(--joint-bg); }
 
-        /* 제목 (절대위치 제거 -> 블록 요소로 변경) */
+        /* 제목 배지 */
         .zone-title-badge {
+            display: inline-block;
             background: var(--primary);
             color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 13px;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
             font-weight: bold;
-            margin-bottom: 15px; /* 제목과 주차칸 사이 간격 */
-            display: inline-block;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            position: sticky; left: 0; /* 스크롤 되어도 보이게 */
         }
         .style-joint .zone-title-badge { background: var(--accent); }
 
-        /* 주차칸 래퍼 */
+        /* 주차칸들을 감싸는 래퍼 (inline-block으로 변경하여 스크롤 자연스럽게) */
         .slots-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-width: max-content; /* 내용물 찌그러짐 방지 */
+            display: inline-block;
+            min-width: 100%;
+            padding: 0 10px; /* 좌우 여백 확보 */
+            box-sizing: border-box;
         }
 
-        .parking-row { display: flex; gap: 6px; margin-bottom: 6px; justify-content: center; }
+        /* 주차 한 줄 */
+        .parking-row { 
+            display: flex; 
+            gap: 6px; 
+            margin-bottom: 6px; 
+            justify-content: center; 
+        }
 
+        /* 개별 주차칸 */
         .slot {
-            width: 65px; height: 85px;
+            width: 60px; height: 80px; /* 모바일에서 보기 좋게 약간 축소 */
             border: 1px solid #cbd5e0; border-radius: 5px;
             background: #fff;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            font-size: 12px; text-align: center;
+            font-size: 11px; text-align: center;
             position: relative;
-            box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+            white-space: pre-line; /* 줄바꿈 허용 */
+            flex-shrink: 0; /* 찌그러짐 방지 */
         }
 
+        /* 상태별 스타일 */
         .slot.filled { background-color: #ebf8ff; border: 2px solid var(--accent); color: var(--accent); font-weight: bold; }
-        .slot.is-unassigned { border: 2px dashed #cbd5e0; background: #f8fafc; color: #aaa; }
         
-        .type-pillar { background: #95a5a6; border: none; width: 30px; box-shadow: none; color: transparent; } 
-        .type-pillar::after { content:''; width:8px; height:8px; background:#bdc3c7; border-radius:50%; }
-        .type-entrance { background: #3182ce; color: white; border: none; font-weight: bold; width: 70px; }
-        .type-disabled { background: #2c5282; color: white; border: none; font-weight: bold; }
+        /* ★ 비지정 스타일 강화 */
+        .slot.is-unassigned { 
+            border: 2px dashed #aaa !important; 
+            background: #f0f0f0 !important; 
+            color: #999 !important; 
+        }
+        
+        .type-pillar { background: #95a5a6; border: none; width: 25px; pointer-events: none; } 
+        .type-entrance { background: #3182ce; color: white; border: none; font-weight: bold; width: 60px; pointer-events: none;}
+        .type-disabled { background: #2c5282; color: white; border: none; font-weight: bold; pointer-events: none;}
 
+        /* 관리자 토글 버튼 */
         .slot-toggle { position: absolute; top: 2px; left: 2px; transform: scale(0.9); z-index: 10; display: none; }
 
+        /* 관리자 패널 */
         #adminControls { display: none; margin-top: 30px; padding: 15px; background: #fff5f5; border: 1px solid var(--danger); border-radius: 10px; }
-        .btn { padding: 10px 15px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; margin: 5px; font-size: 14px; }
+        .btn { padding: 10px; width: 100%; margin-bottom: 5px; border: none; border-radius: 5px; color: white; font-weight: bold; font-size: 14px; }
         .btn-draw { background: var(--primary); }
         .btn-save { background: #2f855a; }
         .btn-reset { background: var(--danger); }
-        .btn-img { background: #718096; display: block; width: 100%; margin-top: 10px; }
+        .btn-img { background: #718096; }
+        
         #summaryArea { display:none; background:#edf2f7; padding:15px; margin-bottom:20px; border-radius:8px; text-align:left; font-size:13px; line-height:1.6; border-left: 4px solid var(--primary); }
     </style>
 </head>
@@ -100,7 +125,7 @@
 
 <div class="container">
     <h1 onclick="handleAdminLogin()">🚙 편백나무 주차 배정</h1>
-    <div id="adminModeMsg" style="display:none; text-align:center; color:red; font-size:12px; font-weight:bold;">관리자 모드 활성</div>
+    <div id="adminModeMsg" style="display:none; text-align:center; color:red; font-size:12px; font-weight:bold; margin-bottom:10px;">관리자 모드 ON</div>
 
     <div id="unitWrapper" class="dong-wrapper">
         <div class="dong-column"><strong>A동</strong><div id="list-A"></div></div>
@@ -143,11 +168,9 @@
 
     <div id="adminControls">
         <h3 style="margin:0 0 10px 0;">⚙️ 관리자 제어판</h3>
-        <div style="display:flex; justify-content:center; flex-wrap:wrap;">
-            <button class="btn btn-draw" onclick="executeDraw()">🎲 추첨 실행</button>
-            <button class="btn btn-save" onclick="saveData()">💾 결과 저장</button>
-            <button class="btn btn-reset" onclick="resetData()">🧹 초기화</button>
-        </div>
+        <button class="btn btn-draw" onclick="executeDraw()">🎲 추첨 실행</button>
+        <button class="btn btn-save" onclick="saveData()">💾 결과 저장</button>
+        <button class="btn btn-reset" onclick="resetData()">🧹 초기화</button>
         <button class="btn btn-img" onclick="saveImage()">📸 이미지 저장</button>
     </div>
 </div>
@@ -169,10 +192,9 @@
     function init() {
         createUnitList();
         renderAllZones();
-        loadData(); // 서버 데이터 로드
+        loadData();
     }
 
-    // 명단 생성
     function createUnitList() {
         ['A','B','C'].forEach(dong => {
             const container = document.getElementById(`list-${dong}`);
@@ -196,7 +218,6 @@
         });
     }
 
-    // 맵 그리기 (타이틀은 HTML에 박음)
     function renderAllZones() {
         const makeRow = (arr, zone) => {
             return `<div class="parking-row">` + arr.map(type => {
@@ -233,7 +254,6 @@
             makeRow(['D','P','S','S'], 'C');
     }
 
-    // 추첨 로직
     function executeDraw() {
         if(!confirm("기존 배정을 지우고 새로 추첨합니다.")) return;
         
@@ -242,7 +262,6 @@
         
         if(!applicants.length) return alert("대상자가 없습니다.");
 
-        // 슬롯 초기화
         document.querySelectorAll('.slot[data-role="parking"]').forEach(s => {
             if(!s.classList.contains('is-unassigned')) {
                 s.classList.remove('filled');
@@ -250,7 +269,6 @@
             }
         });
 
-        // 섞기
         const shuffle = arr => arr.sort(() => Math.random() - 0.5);
         let gA = shuffle(applicants.filter(p => p.dong === 'A'));
         let gB = shuffle(applicants.filter(p => p.dong === 'B'));
@@ -268,12 +286,10 @@
             return { win, lose };
         }
 
-        // 1차 배정
         let resA = assign(gA, getSlots('A'));
         let resB = assign(gB, getSlots('B'));
         let resC = assign(gC, getSlots('C'));
 
-        // 2차 배정
         let poolAB = shuffle([...resA.lose, ...resB.lose]);
         let resAB = assign(poolAB, getSlots('AB'));
 
@@ -286,7 +302,6 @@
         const finalLose = [...failedFromAB_A, ...resBC.lose];
         const totalWin = applicants.length - finalLose.length;
 
-        // 리포트
         const summary = document.getElementById('summaryArea');
         summary.innerHTML = `
             <strong>📊 결과 리포트</strong><br>
@@ -296,7 +311,7 @@
         summary.style.display = 'block';
     }
 
-    // ★ 데이터 로드 수정 (비지정 상태가 UI 체크박스에도 반영되도록) ★
+    // ★ 데이터 로드 및 UI 동기화 (수정됨) ★
     function loadData() {
         db.ref('parking_v3').on('value', snap => {
             const d = snap.val();
@@ -309,20 +324,19 @@
                         const s = slots[i];
                         const chk = s.querySelector('.slot-toggle');
                         
-                        // 텍스트 복구
                         s.querySelector('.slot-txt').innerText = item.txt;
                         
-                        // 배정 상태(색상) 복구
                         if(item.filled) s.classList.add('filled');
                         else s.classList.remove('filled');
                         
-                        // ★ 비지정 상태 및 체크박스 동기화 복구 ★
+                        // ★ 비지정 상태 확실하게 적용 ★
                         if(item.unassigned) {
                             s.classList.add('is-unassigned');
-                            if(chk) chk.checked = false; // 체크박스 끄기
+                            s.querySelector('.slot-txt').innerText = "비지정"; // 텍스트 강제
+                            if(chk) chk.checked = false; // 체크박스 해제
                         } else {
                             s.classList.remove('is-unassigned');
-                            if(chk) chk.checked = true; // 체크박스 켜기
+                            if(chk) chk.checked = true; // 체크박스 체크
                         }
                     }
                 });
@@ -364,14 +378,13 @@
         const s = chk.closest('.slot');
         if(chk.checked) {
             s.classList.remove('is-unassigned');
-            // 배정된 상태였다면 텍스트 유지가 애매하므로 구역명으로 리셋 or 기존 텍스트 유지
             if(s.querySelector('.slot-txt').innerText === "비지정") {
                 s.querySelector('.slot-txt').innerText = s.dataset.zone;
             }
         } else {
             s.classList.add('is-unassigned');
             s.querySelector('.slot-txt').innerText = "비지정";
-            s.classList.remove('filled'); // 비지정하면 당첨도 취소
+            s.classList.remove('filled');
         }
     }
 
