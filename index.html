@@ -2,71 +2,162 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>편백나무 주차 관리 시스템</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>편백나무 주차 배정 시스템</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { --primary: #34495e; --accent: #3182ce; --danger: #e53e3e; --joint: #f8fafc; }
-        body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; background-color: #f4f7f9; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h1 { cursor: pointer; user-select: none; margin-bottom: 5px; padding: 10px; }
-        .admin-badge { display: none; color: #3182ce; font-size: 14px; font-weight: bold; border: 1px solid #3182ce; padding: 2px 10px; border-radius: 20px; margin: 10px 0; }
-        .summary-box { display: none; background: #fff; border: 3px solid var(--accent); padding: 25px; border-radius: 15px; margin: 20px 0 40px 0; text-align: left; line-height: 1.6; }
-        .dong-wrapper { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
-        .dong-column { flex: 1; min-width: 300px; background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
-        .dong-title { font-weight: bold; margin-bottom: 10px; padding: 8px; background: #f8fafc; border-radius: 6px; border-bottom: 2px solid var(--primary); }
-        .list-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 13px; padding: 4px 10px; border-radius: 4px; border: 1px solid #f1f5f9; }
-        .map-section { margin: 20px 0; padding: 20px; background: #fdfdfd; border: 1px solid #cbd5e0; border-radius: 15px; }
-        .map-container { display: flex; flex-direction: column; gap: 15px; align-items: center; }
-        .building-box { width: 100%; border: 2px solid var(--primary); border-radius: 10px; padding: 45px 15px 20px; position: relative; background: white; box-sizing: border-box; margin-bottom: 20px; }
-        .joint-box { width: 100%; border: 1px dashed var(--accent); border-radius: 10px; padding: 25px 15px 15px; position: relative; background: var(--joint); box-sizing: border-box; margin-bottom: 20px; }
-        .label { position: absolute; top: -13px; left: 20px; padding: 3px 15px; font-size: 12px; border-radius: 4px; font-weight: bold; background: var(--primary); color: white; }
-        .joint-label { background: var(--accent); }
-        .parking-row { display: flex; justify-content: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
-        .slot { width: 85px; height: 110px; border: 1px solid #dcdde1; border-radius: 6px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; background: #fff; white-space: pre-line; line-height: 1.3; }
-        .slot-toggle { position: absolute; top: 6px; left: 6px; transform: scale(1.3); cursor: pointer; z-index: 20; display: none; }
-        .slot.filled { background-color: #ebf8ff !important; border: 2px solid var(--accent) !important; color: var(--primary) !important; font-weight: bold; }
-        .slot.is-unassigned { background-color: #f1f5f9 !important; border: 2px dashed #cbd5e0 !important; color: #94a3b8 !important; }
-        .type-pillar { width: 40px; background: #95a5a6; color: white; border: none; }
-        .type-entrance { width: 100px; background: #3182ce; color: white; border: none; font-weight: bold; font-size: 11px; }
-        .type-disabled { background-color: #2b6cb0; color: white; border: none; font-weight: bold; }
-        #adminControls { display: none; margin: 20px 0; padding: 20px; background: #fef2f2; border-radius: 10px; border: 2px solid var(--danger); }
-        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; margin: 5px; transition: 0.2s; }
-        .draw-btn { background: var(--primary); color: white; }
-        .save-db-btn { background: #2f855a; color: white; }
-        .reset-db-btn { background: var(--danger); color: white; }
-        .save-img-btn { background: #718096; color: white; width: 100%; margin-top: 20px; }
+        :root { --primary: #34495e; --accent: #3182ce; --danger: #e53e3e; --joint-bg: #f8fafc; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: #f4f7f9; margin: 0; padding: 15px; color: #333; }
+        
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        h1 { margin: 0 0 20px 0; font-size: 1.4rem; text-align: center; color: var(--primary); }
+        
+        /* 세대 명단 (관리자용 - 평소 숨김) */
+        .dong-wrapper { display: none; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .dong-column { flex: 1; min-width: 120px; background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
+        .list-item { border-bottom: 1px solid #eee; padding: 2px 0; }
+        
+        /* ★★★ 핵심 레이아웃: 구역별 세로 배치 ★★★ */
+        .map-section { display: flex; flex-direction: column; gap: 30px; align-items: center; margin-top: 20px; }
+
+        /* 개별 구역 박스 스타일 */
+        .zone-container {
+            width: 100%;
+            max-width: 600px; /* PC에선 너무 넓지 않게 */
+            position: relative;
+            padding: 30px 10px 15px 10px;
+            border-radius: 12px;
+            box-sizing: border-box;
+            background: #fff;
+            /* 모바일에서 박스 내부 내용이 넘치면 그 박스만 스크롤 */
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 건물(필로티) 스타일: 실선 테두리 */
+        .style-building { border: 2px solid var(--primary); }
+        /* 공동구역 스타일: 점선 테두리 + 연한 배경 */
+        .style-joint { border: 2px dashed var(--accent); background-color: var(--joint-bg); }
+
+        /* 구역 라벨 (좌측 상단 고정) */
+        .zone-label {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            z-index: 5;
+        }
+        .style-joint .zone-label { background: var(--accent); }
+
+        /* 주차칸들을 감싸는 내부 래퍼 (가로 정렬 유지용) */
+        .slots-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* 내용물이 찌그러지지 않도록 최소 너비 보장 */
+            min-width: max-content; 
+            margin: 0 auto;
+        }
+
+        /* 주차 한 줄 (Row) */
+        .parking-row { display: flex; gap: 6px; margin-bottom: 6px; justify-content: center; }
+
+        /* 주차칸 디자인 (카드 형태) */
+        .slot {
+            width: 65px; height: 85px;
+            border: 1px solid #cbd5e0; border-radius: 5px;
+            background: #fff;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-size: 12px; text-align: center;
+            position: relative;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* 슬롯 상태 */
+        .slot.filled { background-color: #ebf8ff; border: 2px solid var(--accent); color: var(--accent); font-weight: bold; }
+        .slot.is-unassigned { border: 2px dashed #cbd5e0; background: #f8fafc; color: #aaa; }
+        
+        /* 특수 슬롯 */
+        .type-pillar { background: #95a5a6; border: none; width: 30px; box-shadow: none; color: transparent; } 
+        .type-pillar::after { content:''; width:8px; height:8px; background:#bdc3c7; border-radius:50%; }
+        .type-entrance { background: #3182ce; color: white; border: none; font-weight: bold; width: 70px; }
+        .type-disabled { background: #2c5282; color: white; border: none; font-weight: bold; }
+
+        /* 관리자용 체크박스 */
+        .slot-toggle { position: absolute; top: 2px; left: 2px; transform: scale(0.8); z-index: 10; display: none; }
+
+        /* 관리자 패널 */
+        #adminControls { display: none; margin-top: 30px; padding: 15px; background: #fff5f5; border: 1px solid var(--danger); border-radius: 10px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; margin: 5px; font-size: 14px; }
+        .btn-draw { background: var(--primary); }
+        .btn-save { background: #2f855a; }
+        .btn-reset { background: var(--danger); }
+        .btn-img { background: #718096; display: block; width: 100%; margin-top: 10px; }
+        #summaryArea { display:none; background:#edf2f7; padding:15px; margin-bottom:20px; border-radius:8px; text-align:left; font-size:13px; line-height:1.6; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1 onclick="handleAdminLogin()">편백나무 주차 구역 배정</h1>
-    <div id="adminBadge" class="admin-badge">관리자 모드 활성화</div>
-
+    <h1 onclick="handleAdminLogin()">🚙 편백나무 주차 배정</h1>
+    
     <div id="unitWrapper" class="dong-wrapper">
-        <div class="dong-column"><div class="dong-title">A동 세대</div><div id="list-A"></div></div>
-        <div class="dong-column"><div class="dong-title">B동 세대</div><div id="list-B"></div></div>
-        <div class="dong-column"><div class="dong-title">C동 세대</div><div id="list-C"></div></div>
+        <div class="dong-column"><strong>A동</strong><div id="list-A"></div></div>
+        <div class="dong-column"><strong>B동</strong><div id="list-B"></div></div>
+        <div class="dong-column"><strong>C동</strong><div id="list-C"></div></div>
     </div>
 
     <div id="printArea">
-        <div id="summaryArea" class="summary-box"></div>
+        <div id="summaryArea"></div>
+
         <div class="map-section">
-            <div class="map-container" id="mainMap"></div>
+            
+            <div class="zone-container style-building">
+                <div class="zone-label">A동 필로티</div>
+                <div class="slots-wrapper" id="zone-A">
+                    </div>
+            </div>
+
+            <div class="zone-container style-joint">
+                <div class="zone-label">A-B 사이 공동</div>
+                <div class="slots-wrapper" id="zone-AB"></div>
+            </div>
+
+            <div class="zone-container style-building">
+                <div class="zone-label">B동 필로티</div>
+                <div class="slots-wrapper" id="zone-B"></div>
+            </div>
+
+            <div class="zone-container style-joint">
+                <div class="zone-label">B-C 사이 공동</div>
+                <div class="slots-wrapper" id="zone-BC"></div>
+            </div>
+
+            <div class="zone-container style-building">
+                <div class="zone-label">C동 필로티</div>
+                <div class="slots-wrapper" id="zone-C"></div>
+            </div>
+
         </div>
     </div>
 
     <div id="adminControls">
-        <p style="font-weight: bold; color: var(--danger); margin-bottom: 10px;">??? 관리자 제어판</p>
-        <div style="display: flex; justify-content: center; flex-wrap: wrap;">
-            <button class="btn draw-btn" onclick="executeDraw()">?? 추첨 시작</button>
-            <button class="btn save-db-btn" onclick="saveToFirebase()">?? 서버에 결과 저장</button>
-            <button class="btn reset-db-btn" onclick="resetDatabase()">?? 서버 데이터 초기화</button>
+        <h3 style="margin:0 0 10px 0;">⚙️ 관리자 기능</h3>
+        <div style="display:flex; justify-content:center; flex-wrap:wrap;">
+            <button class="btn btn-draw" onclick="executeDraw()">🎲 추첨 실행</button>
+            <button class="btn btn-save" onclick="saveData()">💾 저장</button>
+            <button class="btn btn-reset" onclick="resetData()">🧹 초기화</button>
         </div>
-        <button class="btn save-img-btn" onclick="saveAsImage()">?? 현재 결과 이미지로 저장</button>
+        <button class="btn btn-img" onclick="saveImage()">📸 이미지 다운로드</button>
     </div>
 </div>
 
@@ -76,155 +167,247 @@
         databaseURL: "https://parking-bd6fa-default-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "parking-bd6fa"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    
+
+    const skipList = ['A동 201호', 'A동 202호', 'A동 401호', 'C동 202호', 'C동 502호'];
+    const fixedList = { 'C동 403호': 'C동 장애인' }; 
     let isAdmin = false;
     let clickCount = 0;
 
     function init() {
         createUnitList();
-        renderMap();
-        loadFromFirebase();
+        renderAllZones();
+        loadData();
     }
 
+    // 세대 리스트 생성
     function createUnitList() {
-        const skip = ['A동 201호', 'A동 202호', 'A동 401호', 'C동 202호', 'C동 502호'];
-        const fixed = ['B동 302호', 'C동 403호'];
         ['A','B','C'].forEach(dong => {
-            const container = document.getElementById('list-' + dong);
+            const container = document.getElementById(`list-${dong}`);
             container.innerHTML = "";
             for(let f=2; f<=5; f++){
                 let rooms = (dong === 'B' && f > 3) || (dong === 'C' && f === 5) ? 2 : 3;
                 for(let r=1; r<=rooms; r++){
-                    let name = `${dong}동 ${f}0${r}호`;
-                    let isChecked = !skip.includes(name) && !fixed.includes(name);
-                    container.innerHTML += `<div class="list-item"><label><input type="checkbox" class="chk-draw" ${isChecked?'checked':''} value="${name}" data-dong="${dong}" disabled> ${f}0${r}호</label></div>`;
+                    const name = `${dong}동 ${f}0${r}호`;
+                    let isSkipped = skipList.includes(name);
+                    let isFixed = fixedList[name];
+                    let label = name;
+                    let disabled = 'disabled';
+                    let checked = (!isSkipped && !isFixed) ? 'checked' : '';
+                    
+                    if(isSkipped) label += " <span style='color:#ccc'>(x)</span>";
+                    if(isFixed) label += " <span style='color:blue'>(고정)</span>";
+
+                    container.innerHTML += `<div class="list-item"><label><input type="checkbox" class="chk-unit" value="${name}" data-dong="${dong}" ${checked} ${disabled}> ${label}</label></div>`;
                 }
             }
         });
     }
 
-    function renderMap() {
-        const map = document.getElementById('mainMap');
-        const makeRow = (layout, tag) => `<div class="parking-row">` + layout.map(t => {
-            if(t === 'P') return `<div class="slot type-pillar">기둥</div>`;
-            if(t === 'E') return `<div class="slot type-entrance">??<br>출입문</div>`;
-            if(t === 'D') return `<div class="slot type-disabled">?<br>장애인</div>`;
-            return `<div class="slot" data-role="parking" data-tag="${tag}"><input type="checkbox" class="slot-toggle" checked onchange="updateStyle(this)"><strong class="slot-text">${tag}</strong></div>`;
-        }).join('') + `</div>`;
+    // ★ 맵 렌더링 함수 (각 구역별로 그리기) ★
+    function renderAllZones() {
+        // 공통 행 생성 헬퍼
+        const makeRow = (arr, zone) => {
+            return `<div class="parking-row">` + arr.map(type => {
+                if(type === 'P') return `<div class="slot type-pillar"></div>`;
+                if(type === 'E') return `<div class="slot type-entrance">출입구</div>`;
+                if(type === 'D') {
+                    const txt = zone === 'C' ? 'C장애인\n(403호)' : '장애인';
+                    return `<div class="slot type-disabled">${txt}</div>`;
+                }
+                // 일반 주차칸
+                return `<div class="slot" data-role="parking" data-zone="${zone}">
+                            <input type="checkbox" class="slot-toggle" checked onchange="toggleSlot(this)">
+                            <span class="slot-txt">${zone}</span>
+                        </div>`;
+            }).join('') + `</div>`;
+        };
 
-        map.innerHTML = `
-            <div class="building-box"><div class="label">A동 필로티</div>${makeRow(['S','S','P','S','E','S','P','S'], 'A')}${makeRow(['S','S','P','S','P','D'], 'A')}</div>
-            <div class="joint-box"><div class="label joint-label">A-B 공동</div>${makeRow(['D', 'S'], 'AB')}${makeRow(['S', 'S'], 'AB')}</div>
-            <div class="building-box"><div class="label">B동 필로티</div>${makeRow(['S','S','E','S','S'], 'B')}${makeRow(['S','S','P','S','P','S','S'], 'B')}</div>
-            <div class="joint-box"><div class="label joint-label">B-C 공동</div>${makeRow(['S', 'S'], 'BC')}${makeRow(['S', 'S'], 'BC')}</div>
-            <div class="building-box"><div class="label">C동 필로티</div>${makeRow(['S','S','E','S','S'], 'C')}${makeRow(['D','P','S','S'], 'C')}</div>`;
+        // 1. A동 (위: SSP S E SPS / 아래: SSP S P D)
+        document.getElementById('zone-A').innerHTML = 
+            makeRow(['S','S','P','S','E','S','P','S'], 'A') + 
+            makeRow(['S','S','P','S','P','D'], 'A');
+
+        // 2. AB 공동 (위: D S / 아래: S S)
+        document.getElementById('zone-AB').innerHTML = 
+            makeRow(['D','S'], 'AB') + 
+            makeRow(['S','S'], 'AB');
+
+        // 3. B동 (위: SS E SS / 아래: SS P S P SS)
+        document.getElementById('zone-B').innerHTML = 
+            makeRow(['S','S','E','S','S'], 'B') + 
+            makeRow(['S','S','P','S','P','S','S'], 'B');
+
+        // 4. BC 공동 (위: S S / 아래: S S)
+        document.getElementById('zone-BC').innerHTML = 
+            makeRow(['S','S'], 'BC') + 
+            makeRow(['S','S'], 'BC');
+
+        // 5. C동 (위: SS E SS / 아래: D P SS)
+        document.getElementById('zone-C').innerHTML = 
+            makeRow(['S','S','E','S','S'], 'C') + 
+            makeRow(['D','P','S','S'], 'C');
+    }
+
+    // ==========================================
+    // 로직: 규칙 적용 추첨 (이전과 동일)
+    // ==========================================
+    function executeDraw() {
+        if(!confirm("기존 배정을 초기화하고 새로 추첨합니다.")) return;
+        
+        // 1. 신청자 및 슬롯 확보
+        const applicants = Array.from(document.querySelectorAll('.chk-unit:checked')).map(el => ({name: el.value, dong: el.dataset.dong}));
+        const getSlots = (z) => Array.from(document.querySelectorAll(`.slot[data-zone="${z}"]:not(.is-unassigned)`));
+        
+        if(!applicants.length) return alert("대상자가 없습니다.");
+
+        // 초기화
+        document.querySelectorAll('.slot[data-role="parking"]').forEach(s => {
+            s.classList.remove('filled');
+            s.querySelector('.slot-txt').innerText = s.dataset.zone;
+        });
+
+        // 2. 그룹핑 및 셔플
+        const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+        let gA = shuffle(applicants.filter(p => p.dong === 'A'));
+        let gB = shuffle(applicants.filter(p => p.dong === 'B'));
+        let gC = shuffle(applicants.filter(p => p.dong === 'C'));
+
+        // 3. 단계별 배정 함수
+        function assign(people, slots) {
+            let win = [], lose = [];
+            if(people.length <= slots.length) {
+                win = people;
+                // 남은 슬롯은 빈칸으로 둠
+            } else {
+                win = people.slice(0, slots.length);
+                lose = people.slice(slots.length);
+            }
+            
+            // UI 반영
+            win.forEach((p, i) => {
+                slots[i].classList.add('filled');
+                slots[i].querySelector('.slot-txt').innerText = p.name.replace('동 ', '\n');
+            });
+            return { win, lose };
+        }
+
+        // Step 1: 각 동 필로티
+        let resA = assign(gA, getSlots('A'));
+        let resB = assign(gB, getSlots('B'));
+        let resC = assign(gC, getSlots('C'));
+
+        // Step 2: AB 공동구역 (A탈락 + B탈락)
+        let poolAB = shuffle([...resA.lose, ...resB.lose]);
+        let resAB = assign(poolAB, getSlots('AB'));
+
+        // Step 3: BC 공동구역 (AB에서 떨어진 B + C탈락)
+        // * AB에서 떨어진 A는 갈곳이 없음(완전탈락)
+        let failedFromAB_B = resAB.lose.filter(p => p.dong === 'B');
+        let failedFromAB_A = resAB.lose.filter(p => p.dong === 'A');
+
+        let poolBC = shuffle([...failedFromAB_B, ...resC.lose]);
+        let resBC = assign(poolBC, getSlots('BC'));
+
+        // 결과 리포트
+        const finalLose = [...failedFromAB_A, ...resBC.lose];
+        const totalWin = applicants.length - finalLose.length;
+
+        const summary = document.getElementById('summaryArea');
+        summary.innerHTML = `
+            <strong>📊 결과 리포트</strong><br>
+            • 총 신청: ${applicants.length} / 배정: ${totalWin}<br>
+            • A동 필로티: ${resA.win.length}세대<br>
+            • B동 필로티: ${resB.win.length}세대<br>
+            • C동 필로티: ${resC.win.length}세대<br>
+            • 공동구역(AB/BC): ${resAB.win.length + resBC.win.length}세대<br>
+            ${finalLose.length ? `<span style="color:red">⚠️ 대기자(${finalLose.length}): ${finalLose.map(p=>p.name).join(', ')}</span>` : '<span style="color:green">🎉 전원 배정 완료!</span>'}
+        `;
+        summary.style.display = 'block';
+    }
+
+    // 서버 저장/로드/초기화 (Firebase)
+    function saveData() {
+        if(!confirm("서버에 저장합니까?")) return;
+        const data = [];
+        document.querySelectorAll('.slot[data-role="parking"]').forEach(s => {
+            data.push({
+                zone: s.dataset.zone,
+                txt: s.querySelector('.slot-txt').innerText,
+                filled: s.classList.contains('filled'),
+                unassigned: s.classList.contains('is-unassigned')
+            });
+        });
+        db.ref('parking_v3').set({
+            map: data, 
+            report: document.getElementById('summaryArea').innerHTML
+        }).then(() => alert("저장 완료"));
+    }
+
+    function loadData() {
+        db.ref('parking_v3').on('value', snap => {
+            const d = snap.val();
+            if(!d) return;
+            
+            // 맵 데이터 복원 (순서대로 매칭 - data-role="parking" 요소들)
+            const slots = document.querySelectorAll('.slot[data-role="parking"]');
+            if(d.map) {
+                d.map.forEach((item, i) => {
+                    if(slots[i]) {
+                        slots[i].querySelector('.slot-txt').innerText = item.txt;
+                        if(item.filled) slots[i].classList.add('filled');
+                        else slots[i].classList.remove('filled');
+                        
+                        if(item.unassigned) slots[i].classList.add('is-unassigned');
+                        else slots[i].classList.remove('is-unassigned');
+                    }
+                });
+            }
+            if(d.report) {
+                document.getElementById('summaryArea').innerHTML = d.report;
+                document.getElementById('summaryArea').style.display = 'block';
+            }
+        });
+    }
+
+    function resetData() {
+        if(confirm("정말 초기화 하시겠습니까?")) {
+            db.ref('parking_v3').remove();
+            location.reload();
+        }
+    }
+
+    function toggleSlot(chk) {
+        const s = chk.closest('.slot');
+        if(chk.checked) {
+            s.classList.remove('is-unassigned');
+            s.querySelector('.slot-txt').innerText = s.dataset.zone;
+        } else {
+            s.classList.add('is-unassigned');
+            s.querySelector('.slot-txt').innerText = "비지정";
+        }
     }
 
     function handleAdminLogin() {
-        if (++clickCount >= 5) {
-            if (prompt("비밀번호") === "1234") {
+        clickCount++;
+        if(clickCount >= 5) {
+            if(prompt("관리자 암호") === "1234") {
                 isAdmin = true;
                 document.getElementById('adminControls').style.display = 'block';
-                document.getElementById('adminBadge').style.display = 'inline-block';
                 document.getElementById('unitWrapper').style.display = 'flex';
-                document.querySelectorAll('.chk-draw').forEach(el => el.disabled = false);
-                document.querySelectorAll('.slot-toggle').forEach(el => el.style.display = 'block');
+                document.querySelectorAll('.chk-unit').forEach(e => e.disabled = false);
+                document.querySelectorAll('.slot-toggle').forEach(e => e.style.display = 'block');
             }
             clickCount = 0;
         }
     }
 
-    function executeDraw() {
-        let apps = Array.from(document.querySelectorAll('.chk-draw:checked')).map(e => ({ name: e.value, dong: e.dataset.dong }));
-        let slots = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).filter(s => !s.classList.contains('is-unassigned'));
-        if (!apps.length) return alert("신청 세대가 없습니다.");
-
-        let shuffled = apps.sort(() => Math.random() - 0.5);
-        let win = shuffled.slice(0, slots.length);
-        let lose = shuffled.slice(slots.length);
-
-        slots.forEach(s => { s.querySelector('.slot-text').innerText = ""; s.classList.remove('filled'); });
-
-        win.forEach((p, i) => {
-            if (slots[i]) {
-                slots[i].querySelector('.slot-text').innerText = p.name.replace('동 ', '동\n');
-                slots[i].classList.add('filled');
-            }
-        });
-
-        const sArea = document.getElementById('summaryArea');
-        sArea.style.display = 'block';
-        sArea.innerHTML = `<h3>?? 추첨 완료 리포트</h3><p>? 가용 구역: ${slots.length} | 신청: ${apps.length}</p><p>? 당첨: ${win.length} 세대</p>` + 
-            (lose.length ? `<div style="color:red; font-weight:bold; margin-top:10px;">대기자 순번: ${lose.map(l => l.name).join(', ')}</div>` : "");
-    }
-
-    function saveToFirebase() {
-        if (!confirm("이 상태(비지정 포함)를 서버에 저장하시겠습니까?")) return;
-        const slotsData = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).map(s => ({
-            text: s.querySelector('.slot-text').innerText,
-            filled: s.classList.contains('filled'),
-            un: s.classList.contains('is-unassigned'),
-            tag: s.dataset.tag
-        }));
-        db.ref('parking_result').set({ slots: slotsData, report: document.getElementById('summaryArea').innerHTML })
-            .then(() => alert("서버 저장 완료!"));
-    }
-
-    function resetDatabase() {
-        if (!confirm("정말로 모든 데이터를 초기화하시겠습니까?")) return;
-        db.ref('parking_result').remove().then(() => {
-            alert("초기화되었습니다.");
-            location.reload();
-        });
-    }
-
-    function loadFromFirebase() {
-        db.ref('parking_result').on('value', s => {
-            const d = s.val();
-            const slots = document.querySelectorAll('.slot[data-role="parking"]');
-            
-            if (d && d.slots) {
-                d.slots.forEach((item, i) => {
-                    if (slots[i]) {
-                        slots[i].querySelector('.slot-text').innerText = item.text;
-                        if (item.filled) slots[i].classList.add('filled'); else slots[i].classList.remove('filled');
-                        if (item.un) slots[i].classList.add('is-unassigned'); else slots[i].classList.remove('is-unassigned');
-                    }
-                });
-                if (d.report) {
-                    document.getElementById('summaryArea').innerHTML = d.report;
-                    document.getElementById('summaryArea').style.display = 'block';
-                }
-                if (!isAdmin) document.getElementById('unitWrapper').style.display = 'none';
-            } else {
-                slots.forEach(s => {
-                    s.querySelector('.slot-text').innerText = s.dataset.tag;
-                    s.classList.remove('filled', 'is-unassigned');
-                });
-                document.getElementById('summaryArea').style.display = 'none';
-                if (!isAdmin) document.getElementById('unitWrapper').style.display = 'flex';
-            }
-        });
-    }
-
-    function updateStyle(c) {
-        const s = c.closest('.slot');
-        if (c.checked) {
-            s.classList.remove('is-unassigned');
-            s.querySelector('.slot-text').innerText = s.dataset.tag;
-        } else {
-            s.classList.add('is-unassigned');
-            s.querySelector('.slot-text').innerText = "비지정";
-        }
-    }
-
-    function saveAsImage() {
-        html2canvas(document.getElementById('printArea'), { scale: 2 }).then(canvas => {
+    function saveImage() {
+        window.scrollTo(0,0);
+        html2canvas(document.getElementById('printArea'), {scale: 2}).then(canvas => {
             const a = document.createElement('a');
-            a.download = 'parking_map.png';
+            a.download = '주차배정결과.png';
             a.href = canvas.toDataURL();
             a.click();
         });
