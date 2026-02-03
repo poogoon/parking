@@ -112,4 +112,125 @@
             if(t === 'P') return `<div class="slot type-pillar">기둥</div>`;
             if(t === 'E') return `<div class="slot type-entrance">🚪<br>출입문</div>`;
             if(t === 'D') return `<div class="slot type-disabled">♿<br>장애인</div>`;
-            return `<div class="slot" data-role="parking" data-tag="${tag}"><input type="checkbox" class="slot-toggle" checked onchange
+            return `<div class="slot" data-role="parking" data-tag="${tag}"><input type="checkbox" class="slot-toggle" checked onchange="updateStyle(this)"><strong class="slot-text">${tag}</strong></div>`;
+        }).join('') + `</div>`;
+
+        map.innerHTML = `
+            <div class="building-box"><div class="label">A동 필로티</div>${makeRow(['S','S','P','S','E','S','P','S'], 'A')}${makeRow(['S','S','P','S','P','D'], 'A')}</div>
+            <div class="joint-box"><div class="label joint-label">A-B 공동</div>${makeRow(['D', 'S'], 'AB')}${makeRow(['S', 'S'], 'AB')}</div>
+            <div class="building-box"><div class="label">B동 필로티</div>${makeRow(['S','S','E','S','S'], 'B')}${makeRow(['S','S','P','S','P','S','S'], 'B')}</div>
+            <div class="joint-box"><div class="label joint-label">B-C 공동</div>${makeRow(['S', 'S'], 'BC')}${makeRow(['S', 'S'], 'BC')}</div>
+            <div class="building-box"><div class="label">C동 필로티</div>${makeRow(['S','S','E','S','S'], 'C')}${makeRow(['D','P','S','S'], 'C')}</div>`;
+    }
+
+    function handleAdminLogin() {
+        if (++clickCount >= 5) {
+            if (prompt("비밀번호") === "1234") {
+                isAdmin = true;
+                document.getElementById('adminControls').style.display = 'block';
+                document.getElementById('adminBadge').style.display = 'inline-block';
+                document.getElementById('unitWrapper').style.display = 'flex';
+                document.querySelectorAll('.chk-draw').forEach(el => el.disabled = false);
+                document.querySelectorAll('.slot-toggle').forEach(el => el.style.display = 'block');
+            }
+            clickCount = 0;
+        }
+    }
+
+    function executeDraw() {
+        let apps = Array.from(document.querySelectorAll('.chk-draw:checked')).map(e => ({ name: e.value, dong: e.dataset.dong }));
+        let slots = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).filter(s => !s.classList.contains('is-unassigned'));
+        if (!apps.length) return alert("신청 세대가 없습니다.");
+
+        let shuffled = apps.sort(() => Math.random() - 0.5);
+        let win = shuffled.slice(0, slots.length);
+        let lose = shuffled.slice(slots.length);
+
+        slots.forEach(s => { s.querySelector('.slot-text').innerText = ""; s.classList.remove('filled'); });
+
+        win.forEach((p, i) => {
+            if (slots[i]) {
+                slots[i].querySelector('.slot-text').innerText = p.name.replace('동 ', '동\n');
+                slots[i].classList.add('filled');
+            }
+        });
+
+        const sArea = document.getElementById('summaryArea');
+        sArea.style.display = 'block';
+        sArea.innerHTML = `<h3>📊 추첨 완료 리포트</h3><p>• 가용 구역: ${slots.length} | 신청: ${apps.length}</p><p>• 당첨: ${win.length} 세대</p>` + 
+            (lose.length ? `<div style="color:red; font-weight:bold; margin-top:10px;">대기자 순번: ${lose.map(l => l.name).join(', ')}</div>` : "");
+    }
+
+    function saveToFirebase() {
+        if (!confirm("이 상태(비지정 포함)를 서버에 저장하시겠습니까?")) return;
+        const slotsData = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).map(s => ({
+            text: s.querySelector('.slot-text').innerText,
+            filled: s.classList.contains('filled'),
+            un: s.classList.contains('is-unassigned'),
+            tag: s.dataset.tag
+        }));
+        db.ref('parking_result').set({ slots: slotsData, report: document.getElementById('summaryArea').innerHTML })
+            .then(() => alert("서버 저장 완료!"));
+    }
+
+    function resetDatabase() {
+        if (!confirm("정말로 모든 데이터를 초기화하시겠습니까?")) return;
+        db.ref('parking_result').remove().then(() => {
+            alert("초기화되었습니다.");
+            location.reload();
+        });
+    }
+
+    function loadFromFirebase() {
+        db.ref('parking_result').on('value', s => {
+            const d = s.val();
+            const slots = document.querySelectorAll('.slot[data-role="parking"]');
+            
+            if (d && d.slots) {
+                d.slots.forEach((item, i) => {
+                    if (slots[i]) {
+                        slots[i].querySelector('.slot-text').innerText = item.text;
+                        if (item.filled) slots[i].classList.add('filled'); else slots[i].classList.remove('filled');
+                        if (item.un) slots[i].classList.add('is-unassigned'); else slots[i].classList.remove('is-unassigned');
+                    }
+                });
+                if (d.report) {
+                    document.getElementById('summaryArea').innerHTML = d.report;
+                    document.getElementById('summaryArea').style.display = 'block';
+                }
+                if (!isAdmin) document.getElementById('unitWrapper').style.display = 'none';
+            } else {
+                slots.forEach(s => {
+                    s.querySelector('.slot-text').innerText = s.dataset.tag;
+                    s.classList.remove('filled', 'is-unassigned');
+                });
+                document.getElementById('summaryArea').style.display = 'none';
+                if (!isAdmin) document.getElementById('unitWrapper').style.display = 'flex';
+            }
+        });
+    }
+
+    function updateStyle(c) {
+        const s = c.closest('.slot');
+        if (c.checked) {
+            s.classList.remove('is-unassigned');
+            s.querySelector('.slot-text').innerText = s.dataset.tag;
+        } else {
+            s.classList.add('is-unassigned');
+            s.querySelector('.slot-text').innerText = "비지정";
+        }
+    }
+
+    function saveAsImage() {
+        html2canvas(document.getElementById('printArea'), { scale: 2 }).then(canvas => {
+            const a = document.createElement('a');
+            a.download = 'parking_map.png';
+            a.href = canvas.toDataURL();
+            a.click();
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
