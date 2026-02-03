@@ -120,7 +120,10 @@
             <div class="joint-box"><div class="label joint-label">A-B 공동</div>${makeRow(['D', 'S'], 'AB')}${makeRow(['S', 'S'], 'AB')}</div>
             <div class="building-box"><div class="label">B동 필로티</div>${makeRow(['S','S','E','S','S'], 'B')}${makeRow(['S','S','P','S','P','S','S'], 'B')}</div>
             <div class="joint-box"><div class="label joint-label">B-C 공동</div>${makeRow(['S', 'S'], 'BC')}${makeRow(['S', 'S'], 'BC')}</div>
-            <div class="building-box"><div class="label">C동 필로티</div>${makeRow(['S','S','E','S','S'], 'C')}${makeRow(['D','P','S','S'], 'C')}</div>`;
+            <div class="building-box"><div class="label">C동 필로티</div>
+                ${makeRow(['S','S','E','S','S'], 'C')}
+                ${makeRow(['D','S','P','S','S'], 'C')}
+            </div>`;
     }
 
     function handleAdminLogin() {
@@ -161,7 +164,6 @@
         });
 
         // 결과 저장용
-        let results = [];
         let losers = [];
 
         // --- 배정 로직 시작 ---
