@@ -68,6 +68,10 @@
     .m-btn.ghost { border:1px solid #e2e8f0; background:#fff; }
     .m-btn.danger { border:none; background:var(--danger); color:#fff; }
     .m-btn.primary { border:none; background:var(--accent); color:#fff; }
+
+    /* 모달 안에서만 박스 계산을 border-box로 */
+    #shareModal *, #shareModal *::before, #shareModal *::after { box-sizing: border-box; }
+
   </style>
 </head>
 
@@ -711,3 +715,4 @@
 </script>
 </body>
 </html>
+
