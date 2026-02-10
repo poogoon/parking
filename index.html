@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<!-- PWA: Manifest -->
+<link rel="manifest" href="/parking/manifest.json">
+
+<!-- iOS: 홈화면 아이콘 -->
+<link rel="apple-touch-icon" sizes="180x180" href="/parking/icons/apple-touch-icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/parking/icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/parking/icons/apple-touch-icon-152.png">
+
+<!-- iOS: standalone(앱처럼) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="편백나무">
+
+<!-- Theme color(안드로이드 상단바) -->
+<meta name="theme-color" content="#3182ce">
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>편백나무 주차 관리 시스템</title>
@@ -8,6 +24,71 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+  // --- PWA 설치(안드로이드/크롬) ---
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('installBtn');
+  const iosHelp = document.getElementById('iosHelp');
+
+  // iOS 판별(홈화면 추가 안내용)
+  const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInStandaloneMode = () => (window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // 크롬에서만 뜨는 설치 이벤트(안드로이드/데스크탑)
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!isInStandaloneMode()) {
+      installBtn.style.display = 'inline-block';
+    }
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (isInStandaloneMode()) return;
+
+    // iOS는 prompt 불가 → 안내만
+    if (isIos()) {
+      iosHelp.style.display = 'block';
+      return;
+    }
+
+    // 안드로이드/크롬: 설치 팝업
+    if (!deferredPrompt) {
+      // 이벤트가 아직 안 잡혔으면 안내
+      alert("설치가 가능한 브라우저(Chrome)에서 다시 시도해주세요.");
+      return;
+    }
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+
+    // 설치 완료면 버튼 숨김
+    if (outcome === 'accepted') {
+      installBtn.style.display = 'none';
+    }
+  });
+
+  // iOS에서는 버튼을 항상 보여주고(혹은 안내만), 눌렀을 때 설명 띄우기
+  window.addEventListener('load', () => {
+    if (isInStandaloneMode()) return;
+
+    if (isIos()) {
+      installBtn.style.display = 'inline-block';
+      installBtn.addEventListener('click', () => {
+        iosHelp.style.display = 'block';
+      });
+    }
+  });
+
+  // --- 서비스워커 등록(있으면 앱처럼 로딩/캐시) ---
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/parking/sw.js').catch(console.error);
+    });
+  }
+</script>
+
 
   <style>
     :root { --primary:#34495e; --accent:#3182ce; --danger:#e53e3e; --joint:#f8fafc; --warn:#f59e0b; --share:#22c55e; }
@@ -69,13 +150,29 @@
     .m-btn.danger { border:none; background:var(--danger); color:#fff; }
     .m-btn.primary { border:none; background:var(--accent); color:#fff; }
 
-    /* 모달 안에서만 박스 계산을 border-box로 */
-    #shareModal *, #shareModal *::before, #shareModal *::after { box-sizing: border-box; }
+
+	/* 모달 안에서만 박스 계산을 border-box로 */
+	#shareModal *, #shareModal *::before, #shareModal *::after { box-sizing: border-box; }
+
+
+
 
   </style>
 </head>
 
 <body>
+<div style="display:flex; justify-content:center; gap:10px; margin:10px 0 0;">
+  <button id="installBtn" class="btn" style="background:#3182ce; color:#fff; display:none;">
+    📌 홈화면에 추가
+  </button>
+</div>
+
+<!-- iOS 안내(아이폰은 자동 설치 팝업이 없음) -->
+<div id="iosHelp" style="display:none; margin-top:10px; font-size:13px; color:#334155; background:#f1f5f9; border:1px solid #e2e8f0; padding:10px 12px; border-radius:12px; text-align:left;">
+  아이폰/아이패드에서는 자동 설치가 뜨지 않습니다.<br>
+  <b>공유(⬆️)</b> 버튼 → <b>홈 화면에 추가</b>를 눌러주세요.
+</div>
+
 <div class="container">
   <h1 onclick="handleAdminLogin()">편백나무 주차 구역 배정</h1>
   <div id="adminBadge" class="admin-badge">관리자 모드 활성화</div>
