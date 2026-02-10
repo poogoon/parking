@@ -1,305 +1,499 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>편백나무 주차 관리 시스템</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-        :root { --primary: #34495e; --accent: #3182ce; --danger: #e53e3e; --joint: #f8fafc; }
-        body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; background-color: #f4f7f9; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h1 { cursor: pointer; user-select: none; margin-bottom: 5px; padding: 10px; }
-        
-        /* 관리자 모드 배지 */
-        .admin-badge { display: none; color: #3182ce; font-size: 14px; font-weight: bold; border: 1px solid #3182ce; padding: 2px 10px; border-radius: 20px; margin: 10px 0; }
-        
-        /* 결과 리포트 박스 */
-        .summary-box { display: none; background: #fff; border: 3px solid var(--accent); padding: 25px; border-radius: 15px; margin: 20px 0 40px 0; text-align: left; line-height: 1.6; }
-        
-        /* 동별 리스트 */
-        .dong-wrapper { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
-        .dong-column { flex: 1; min-width: 300px; background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
-        .dong-title { font-weight: bold; margin-bottom: 10px; padding: 8px; background: #f8fafc; border-radius: 6px; border-bottom: 2px solid var(--primary); }
-        .list-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 13px; padding: 4px 10px; border-radius: 4px; border: 1px solid #f1f5f9; }
-        
-        /* 지도 영역 */
-        .map-section { margin: 20px 0; padding: 20px; background: #fdfdfd; border: 1px solid #cbd5e0; border-radius: 15px; }
-        .map-container { display: flex; flex-direction: column; gap: 15px; align-items: center; }
-        .building-box { width: 100%; border: 2px solid var(--primary); border-radius: 10px; padding: 45px 15px 20px; position: relative; background: white; box-sizing: border-box; margin-bottom: 20px; }
-        .joint-box { width: 100%; border: 1px dashed var(--accent); border-radius: 10px; padding: 25px 15px 15px; position: relative; background: var(--joint); box-sizing: border-box; margin-bottom: 20px; }
-        .label { position: absolute; top: -13px; left: 20px; padding: 3px 15px; font-size: 12px; border-radius: 4px; font-weight: bold; background: var(--primary); color: white; }
-        .joint-label { background: var(--accent); }
-        
-        /* 주차 슬롯 스타일 */
-        .parking-row { display: flex; justify-content: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
-        .slot { width: 85px; height: 110px; border: 1px solid #dcdde1; border-radius: 6px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; background: #fff; white-space: pre-line; line-height: 1.3; }
-        .slot-toggle { position: absolute; top: 6px; left: 6px; transform: scale(1.3); cursor: pointer; z-index: 20; display: none; }
-        .slot.filled { background-color: #ebf8ff !important; border: 2px solid var(--accent) !important; color: var(--primary) !important; font-weight: bold; }
-        .slot.is-unassigned { background-color: #f1f5f9 !important; border: 2px dashed #cbd5e0 !important; color: #94a3b8 !important; }
-        
-        /* 특수 구역 스타일 */
-        .type-pillar { width: 40px; background: #95a5a6; color: white; border: none; }
-        .type-entrance { width: 100px; background: #3182ce; color: white; border: none; font-weight: bold; font-size: 11px; }
-        .type-disabled { background-color: #2b6cb0; color: white; border: none; font-weight: bold; }
-        
-        /* 관리자 패널 */
-        #adminControls { display: none; margin: 20px 0; padding: 20px; background: #fef2f2; border-radius: 10px; border: 2px solid var(--danger); }
-        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; margin: 5px; transition: 0.2s; }
-        .draw-btn { background: var(--primary); color: white; }
-        .save-db-btn { background: #2f855a; color: white; }
-        .reset-db-btn { background: var(--danger); color: white; }
-        .save-img-btn { background: #718096; color: white; width: 100%; margin-top: 20px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>편백나무 주차 관리 시스템</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    :root { --primary: #34495e; --accent: #3182ce; --danger: #e53e3e; --joint: #f8fafc; --warn: #f59e0b; }
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; background-color: #f4f7f9; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 1100px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    h1 { cursor: pointer; user-select: none; margin-bottom: 5px; padding: 10px; }
+
+    /* 관리자 모드 배지 */
+    .admin-badge { display: none; color: #3182ce; font-size: 14px; font-weight: bold; border: 1px solid #3182ce; padding: 2px 10px; border-radius: 20px; margin: 10px 0; }
+
+    /* 결과 리포트 박스 */
+    .summary-box { display: none; background: #fff; border: 3px solid var(--accent); padding: 25px; border-radius: 15px; margin: 20px 0 40px 0; text-align: left; line-height: 1.6; }
+
+    /* 동별 리스트 */
+    .dong-wrapper { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
+    .dong-column { flex: 1; min-width: 300px; background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
+    .dong-title { font-weight: bold; margin-bottom: 10px; padding: 8px; background: #f8fafc; border-radius: 6px; border-bottom: 2px solid var(--primary); }
+    .list-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 13px; padding: 4px 10px; border-radius: 4px; border: 1px solid #f1f5f9; }
+
+    /* 지도 영역 */
+    .map-section { margin: 20px 0; padding: 20px; background: #fdfdfd; border: 1px solid #cbd5e0; border-radius: 15px; }
+    .map-container { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+    .building-box { width: 100%; border: 2px solid var(--primary); border-radius: 10px; padding: 45px 15px 20px; position: relative; background: white; box-sizing: border-box; margin-bottom: 20px; }
+    .joint-box { width: 100%; border: 1px dashed var(--accent); border-radius: 10px; padding: 25px 15px 15px; position: relative; background: var(--joint); box-sizing: border-box; margin-bottom: 20px; }
+    .label { position: absolute; top: -13px; left: 20px; padding: 3px 15px; font-size: 12px; border-radius: 4px; font-weight: bold; background: var(--primary); color: white; }
+    .joint-label { background: var(--accent); }
+
+    /* 주차 슬롯 스타일 */
+    .parking-row { display: flex; justify-content: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+    .slot { width: 85px; height: 110px; border: 1px solid #dcdde1; border-radius: 6px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; background: #fff; white-space: pre-line; line-height: 1.3; }
+    .slot-toggle { position: absolute; top: 6px; left: 6px; transform: scale(1.3); cursor: pointer; z-index: 20; display: none; }
+
+    .slot.filled { background-color: #ebf8ff !important; border: 2px solid var(--accent) !important; color: var(--primary) !important; font-weight: bold; }
+    .slot.is-unassigned { background-color: #f1f5f9 !important; border: 2px dashed #cbd5e0 !important; color: #94a3b8 !important; }
+
+    /* 수기(오버라이드) 표시 */
+    .slot.manual-locked { outline: 3px solid var(--warn); outline-offset: 2px; }
+
+    /* 특수 구역 스타일 */
+    .type-pillar { width: 40px; background: #95a5a6; color: white; border: none; }
+    .type-entrance { width: 100px; background: #3182ce; color: white; border: none; font-weight: bold; font-size: 11px; }
+    .type-disabled { background-color: #2b6cb0; color: white; border: none; font-weight: bold; cursor: pointer; }
+
+    /* 관리자 패널 */
+    #adminControls { display: none; margin: 20px 0; padding: 20px; background: #fef2f2; border-radius: 10px; border: 2px solid var(--danger); }
+    .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; margin: 5px; transition: 0.2s; }
+    .draw-btn { background: var(--primary); color: white; }
+    .save-db-btn { background: #2f855a; color: white; }
+    .reset-db-btn { background: var(--danger); color: white; }
+    .save-img-btn { background: #718096; color: white; width: 100%; margin-top: 20px; }
+
+    /* 안내 문구 */
+    .hint { font-size: 12px; color: #64748b; margin-top: 8px; }
+  </style>
 </head>
+
 <body>
-
 <div class="container">
-    <h1 onclick="handleAdminLogin()">편백나무 주차 구역 배정</h1>
-    <div id="adminBadge" class="admin-badge">관리자 모드 활성화</div>
+  <h1 onclick="handleAdminLogin()">편백나무 주차 구역 배정</h1>
+  <div id="adminBadge" class="admin-badge">관리자 모드 활성화</div>
 
-    <div id="unitWrapper" class="dong-wrapper">
-        <div class="dong-column"><div class="dong-title">A동 세대</div><div id="list-A"></div></div>
-        <div class="dong-column"><div class="dong-title">B동 세대</div><div id="list-B"></div></div>
-        <div class="dong-column"><div class="dong-title">C동 세대</div><div id="list-C"></div></div>
-    </div>
+  <div id="unitWrapper" class="dong-wrapper">
+    <div class="dong-column"><div class="dong-title">A동 세대</div><div id="list-A"></div></div>
+    <div class="dong-column"><div class="dong-title">B동 세대</div><div id="list-B"></div></div>
+    <div class="dong-column"><div class="dong-title">C동 세대</div><div id="list-C"></div></div>
+  </div>
 
-    <div id="printArea">
-        <div id="summaryArea" class="summary-box"></div>
-        <div class="map-section">
-            <div class="map-container" id="mainMap"></div>
-        </div>
+  <div id="printArea">
+    <div id="summaryArea" class="summary-box"></div>
+    <div class="map-section">
+      <div class="map-container" id="mainMap"></div>
+      <div class="hint">※ 관리자 모드에서 슬롯을 클릭하면 수기 표기를 입력/해제할 수 있습니다(빈칸 입력 시 해제).</div>
     </div>
+  </div>
 
-    <div id="adminControls">
-        <p style="font-weight: bold; color: var(--danger); margin-bottom: 10px;">🛠️ 관리자 제어판</p>
-        <div style="display: flex; justify-content: center; flex-wrap: wrap;">
-            <button class="btn draw-btn" onclick="executeDraw()">🎲 규칙대로 추첨</button>
-            <button class="btn save-db-btn" onclick="saveToFirebase()">💾 서버에 결과 저장</button>
-            <button class="btn reset-db-btn" onclick="resetDatabase()">🧹 서버 데이터 초기화</button>
-        </div>
-        <button class="btn save-img-btn" onclick="saveAsImage()">📸 현재 결과 이미지로 저장</button>
+  <div id="adminControls">
+    <p style="font-weight: bold; color: var(--danger); margin-bottom: 10px;">🛠️ 관리자 제어판</p>
+    <div style="display: flex; justify-content: center; flex-wrap: wrap;">
+      <button class="btn draw-btn" onclick="executeDraw()">🎲 규칙대로 추첨</button>
+      <button class="btn save-db-btn" onclick="saveToFirebase()">💾 서버에 결과 저장</button>
+      <button class="btn reset-db-btn" onclick="resetDatabase()">🧹 서버 데이터 초기화</button>
+      <button class="btn reset-db-btn" onclick="clearManualOverrides()">🧽 수기표기 초기화</button>
     </div>
+    <button class="btn save-img-btn" onclick="saveAsImage()">📸 현재 결과 이미지로 저장</button>
+  </div>
 </div>
 
 <script>
-    // --- Firebase 설정 ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyC0jloY1-k3bzz4HuPrmpL0wdtzHYMw-FE",
-        databaseURL: "https://parking-bd6fa-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "parking-bd6fa"
+  // --- Firebase 설정 ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyC0jloY1-k3bzz4HuPrmpL0wdtzHYMw-FE",
+    databaseURL: "https://parking-bd6fa-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "parking-bd6fa"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let isAdmin = false;
+  let clickCount = 0;
+
+  // --- 초기화 ---
+  function init() {
+    createUnitList();
+    renderMap();
+    enableSlotManualEdit();
+    loadFromFirebase();
+  }
+
+  // --- 세대 리스트 생성 ---
+  function createUnitList() {
+    const skip = ['A동 201호', 'A동 202호', 'A동 401호', 'C동 202호', 'C동 502호'];
+    const fixed = ['B동 302호', 'C동 403호'];
+
+    ['A','B','C'].forEach(dong => {
+      const container = document.getElementById('list-' + dong);
+      container.innerHTML = "";
+
+      for (let f = 2; f <= 5; f++) {
+        let rooms = (dong === 'B' && f > 3) || (dong === 'C' && f === 5) ? 2 : 3;
+
+        for (let r = 1; r <= rooms; r++) {
+          let name = `${dong}동 ${f}0${r}호`;
+          let isChecked = !skip.includes(name) && !fixed.includes(name);
+
+          container.innerHTML += `
+            <div class="list-item">
+              <label>
+                <input type="checkbox" class="chk-draw" ${isChecked ? 'checked' : ''} value="${name}" data-dong="${dong}" disabled>
+                ${f}0${r}호
+              </label>
+            </div>`;
+        }
+      }
+    });
+  }
+
+  // --- 지도 렌더링 ---
+  function renderMap() {
+    const map = document.getElementById('mainMap');
+
+    const makeRow = (layout, tag) => `<div class="parking-row">` + layout.map(t => {
+      if (t === 'P') return `<div class="slot type-pillar">기둥</div>`;
+      if (t === 'E') return `<div class="slot type-entrance">🚪<br>출입문</div>`;
+
+      // 장애인(특수) 슬롯: 저장/수기표기 가능하지만 추첨 대상 아님
+      if (t === 'D') {
+        return `
+          <div class="slot type-disabled"
+               data-role="special"
+               data-save="1"
+               data-tag="${tag}">
+            <strong class="slot-text">♿\n장애인</strong>
+          </div>`;
+      }
+
+      // 일반 주차 슬롯: 추첨 대상 + 비지정 토글 + 저장/수기표기 가능
+      return `
+        <div class="slot"
+             data-role="parking"
+             data-save="1"
+             data-tag="${tag}">
+          <input type="checkbox" class="slot-toggle" checked onchange="updateStyle(this)">
+          <strong class="slot-text">${tag}</strong>
+        </div>`;
+    }).join('') + `</div>`;
+
+    map.innerHTML = `
+      <div class="building-box">
+        <div class="label">A동 필로티</div>
+        ${makeRow(['S','S','P','S','E','S','P','S'], 'A')}
+        ${makeRow(['S','S','P','S','P','D'], 'A')}
+      </div>
+
+      <div class="joint-box">
+        <div class="label joint-label">A-B 공동</div>
+        ${makeRow(['D','S'], 'AB')}
+        ${makeRow(['S','S'], 'AB')}
+      </div>
+
+      <div class="building-box">
+        <div class="label">B동 필로티</div>
+        ${makeRow(['S','S','E','S','S'], 'B')}
+        ${makeRow(['S','S','P','S','P','S','S'], 'B')}
+      </div>
+
+      <div class="joint-box">
+        <div class="label joint-label">B-C 공동</div>
+        ${makeRow(['S','S'], 'BC')}
+        ${makeRow(['S','S'], 'BC')}
+      </div>
+
+      <div class="building-box">
+        <div class="label">C동 필로티</div>
+        ${makeRow(['S','S','E','S','S'], 'C')}
+        ${makeRow(['D','S','P','S','S'], 'C')}
+      </div>
+    `;
+  }
+
+  // --- 관리자 로그인 ---
+  function handleAdminLogin() {
+    if (++clickCount >= 5) {
+      if (prompt("비밀번호") === "1234") {
+        isAdmin = true;
+        document.getElementById('adminControls').style.display = 'block';
+        document.getElementById('adminBadge').style.display = 'inline-block';
+        document.getElementById('unitWrapper').style.display = 'flex';
+        document.querySelectorAll('.chk-draw').forEach(el => el.disabled = false);
+        document.querySelectorAll('.slot-toggle').forEach(el => el.style.display = 'block');
+      }
+      clickCount = 0;
+    }
+  }
+
+  // --- 슬롯 수기 입력(모든 저장 대상 슬롯) ---
+  function enableSlotManualEdit() {
+    document.querySelectorAll('.slot[data-save="1"]').forEach(slot => {
+      slot.addEventListener('click', (e) => {
+        if (!isAdmin) return;
+        if (e.target && e.target.classList.contains('slot-toggle')) return;
+
+        const textEl = slot.querySelector('.slot-text');
+        if (!textEl) return;
+
+        const current = (slot.dataset.manualText ?? textEl.innerText).replace(/\n/g, ' ');
+        const input = prompt(
+          "표기할 내용을 입력하세요.\n예) C동 403호 / 자처사용(OO님)\n\n빈칸으로 두면 '수기표기 해제'",
+          current
+        );
+
+        if (input === null) return; // 취소
+        const trimmed = input.trim();
+
+        if (trimmed === "") {
+          // 수기표기 해제
+          delete slot.dataset.manualText;
+          slot.classList.remove('manual-locked');
+
+          // 현재 상태 기반 기본 표시 복구
+          if (slot.dataset.role === 'parking') {
+            if (slot.classList.contains('is-unassigned')) {
+              textEl.innerText = "비지정";
+            } else if (slot.classList.contains('filled')) {
+              // filled인 경우 현재 표시 유지(추첨/저장 텍스트가 이미 들어있음)
+              // 필요하면 아래 한 줄로 tag로 강제 복구 가능:
+              // textEl.innerText = slot.dataset.tag;
+            } else {
+              textEl.innerText = slot.dataset.tag;
+            }
+          } else {
+            textEl.innerText = "♿\n장애인";
+          }
+          return;
+        }
+
+        // 수기표기 적용
+        slot.dataset.manualText = trimmed;
+        textEl.innerText = trimmed.replace('동 ', '동\n');
+        slot.classList.add('manual-locked');
+
+        // 수기표기된 칸은 "사용중"으로 보이게 filled 처리(원치 않으면 이 줄 삭제)
+        slot.classList.add('filled');
+      });
+    });
+  }
+
+  // --- 수기표기 초기화(전체) ---
+  function clearManualOverrides() {
+    if (!isAdmin) {
+      alert("관리자 권한이 없습니다.");
+      return;
+    }
+    if (!confirm("모든 칸의 '수기표기'만 초기화할까요?\n(추첨 결과/비지정 설정은 유지됩니다)")) return;
+
+    document.querySelectorAll('.slot[data-save="1"]').forEach(slot => {
+      if (!slot.dataset.manualText) return;
+
+      delete slot.dataset.manualText;
+      slot.classList.remove('manual-locked');
+
+      const textEl = slot.querySelector('.slot-text');
+      if (!textEl) return;
+
+      // 현재 상태에 맞춰 기본 표시로 복구
+      if (slot.dataset.role === "parking") {
+        if (slot.classList.contains('is-unassigned')) {
+          textEl.innerText = "비지정";
+        } else if (slot.classList.contains('filled')) {
+          // filled(추첨/기존 저장 결과) 텍스트는 유지
+        } else {
+          textEl.innerText = slot.dataset.tag;
+        }
+      } else {
+        textEl.innerText = "♿\n장애인";
+      }
+    });
+
+    alert("수기표기가 초기화되었습니다.\n원하시면 '서버에 결과 저장'을 눌러 반영하세요.");
+  }
+
+  // --- 추첨 로직 ---
+  function executeDraw() {
+    // 1) 신청 세대 분리 및 랜덤 셔플
+    const getApps = (dong) => Array.from(document.querySelectorAll(`.chk-draw[data-dong="${dong}"]:checked`))
+      .map(e => e.value).sort(() => Math.random() - 0.5);
+
+    let appsA = getApps('A');
+    let appsB = getApps('B');
+    let appsC = getApps('C');
+
+    // 2) 구역 슬롯 확보 (비지정 제외 + 추첨 대상(주차)만)
+    const getSlots = (tag) => Array.from(document.querySelectorAll(`.slot[data-role="parking"][data-tag="${tag}"]`))
+      .filter(s => !s.classList.contains('is-unassigned'));
+
+    let slotsA  = getSlots('A');
+    let slotsB  = getSlots('B');
+    let slotsC  = getSlots('C');
+    let slotsAB = getSlots('AB');
+    let slotsBC = getSlots('BC');
+
+    // 3) 초기화: 수기표기(잠금) 칸은 유지, 나머지만 초기화
+    document.querySelectorAll('.slot[data-role="parking"]').forEach(s => {
+      const locked = (s.dataset.manualText && s.dataset.manualText.trim() !== "");
+      if (locked) {
+        // 잠금칸은 추첨이 건드리지 않도록 filled 유지(이미 수기 입력 시 filled 붙임)
+        s.classList.add('filled');
+        return;
+      }
+      s.querySelector('.slot-text').innerText = s.dataset.tag;
+      s.classList.remove('filled');
+    });
+
+    // 결과 저장용
+    let losers = [];
+
+    // 채우기: 잠금칸은 건너뛰고 배정
+    const fillDirect = (apps, slots) => {
+      while (apps.length > 0 && slots.length > 0) {
+        let s = slots.shift();
+
+        // 잠금칸은 건너뛰기
+        while (s && s.dataset.manualText && s.dataset.manualText.trim() !== "") {
+          s = slots.shift();
+        }
+        if (!s) break;
+
+        let p = apps.shift();
+        s.querySelector('.slot-text').innerText = p.replace('동 ', '동\n');
+        s.classList.add('filled');
+      }
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    
-    let isAdmin = false;
-    let clickCount = 0;
+    // [규칙 1] 각 동 전용 필로티 먼저 채우기
+    fillDirect(appsA, slotsA);
+    fillDirect(appsB, slotsB);
+    fillDirect(appsC, slotsC);
 
-    // --- 초기화 ---
-    function init() {
-        createUnitList();
-        renderMap();
-        loadFromFirebase();
+    // [규칙 2] A-B 공동구역: A동 먼저, 남으면 B동
+    fillDirect(appsA, slotsAB);
+    fillDirect(appsB, slotsAB);
+
+    // [규칙 3] B-C 공동구역: C동 먼저, 남으면 B동
+    fillDirect(appsC, slotsBC);
+    fillDirect(appsB, slotsBC);
+
+    // 남은 세대는 대기자
+    losers = [...appsA, ...appsB, ...appsC];
+
+    // 4) 리포트 출력
+    const sArea = document.getElementById('summaryArea');
+    sArea.style.display = 'block';
+    sArea.innerHTML =
+      `<h3>📊 구역별 추첨 결과</h3>` +
+      `<p>• 당첨/표기 세대 수: ${document.querySelectorAll('.slot.filled').length} 칸</p>` +
+      (losers.length ? `<div style="color:red; font-weight:bold; margin-top:10px;">⚠️ 대기 순번: ${losers.join(', ')}</div>` : "");
+  }
+
+  // --- 비지정 토글 스타일 업데이트 ---
+  function updateStyle(c) {
+    const s = c.closest('.slot');
+
+    if (c.checked) {
+      s.classList.remove('is-unassigned');
+      // 수기표기 있으면 텍스트는 건드리지 않음
+      if (!(s.dataset.manualText && s.dataset.manualText.trim() !== "")) {
+        s.querySelector('.slot-text').innerText = s.dataset.tag;
+      }
+    } else {
+      s.classList.add('is-unassigned');
+      if (!(s.dataset.manualText && s.dataset.manualText.trim() !== "")) {
+        s.querySelector('.slot-text').innerText = "비지정";
+      }
     }
+  }
 
-    // --- 세대 리스트 생성 ---
-    function createUnitList() {
-        const skip = ['A동 201호', 'A동 202호', 'A동 401호', 'C동 202호', 'C동 502호'];
-        const fixed = ['B동 302호', 'C동 403호'];
-        ['A','B','C'].forEach(dong => {
-            const container = document.getElementById('list-' + dong);
-            container.innerHTML = "";
-            for(let f=2; f<=5; f++){
-                let rooms = (dong === 'B' && f > 3) || (dong === 'C' && f === 5) ? 2 : 3;
-                for(let r=1; r<=rooms; r++){
-                    let name = `${dong}동 ${f}0${r}호`;
-                    let isChecked = !skip.includes(name) && !fixed.includes(name);
-                    container.innerHTML += `<div class="list-item"><label><input type="checkbox" class="chk-draw" ${isChecked?'checked':''} value="${name}" data-dong="${dong}" disabled> ${f}0${r}호</label></div>`;
-                }
-            }
+  // --- 서버 저장 ---
+  function saveToFirebase() {
+    if (!isAdmin) {
+      alert("관리자 권한이 없습니다.");
+      return;
+    }
+    if (!confirm("이 결과를 서버에 저장하시겠습니까?")) return;
+
+    const slotsData = Array.from(document.querySelectorAll('.slot[data-save="1"]')).map(s => ({
+      text: s.querySelector('.slot-text') ? s.querySelector('.slot-text').innerText : "",
+      filled: s.classList.contains('filled'),
+      un: s.classList.contains('is-unassigned'),
+      tag: s.dataset.tag,
+      role: s.dataset.role || "",
+      manualText: s.dataset.manualText || ""
+    }));
+
+    db.ref('parking_result').set({
+      slots: slotsData,
+      report: document.getElementById('summaryArea').innerHTML
+    })
+    .then(() => alert("서버 저장 완료!"))
+    .catch((error) => alert("저장 실패: " + error.message));
+  }
+
+  // --- 데이터 초기화(서버) ---
+  function resetDatabase() {
+    if (!isAdmin) {
+      alert("관리자 권한이 없습니다.");
+      return;
+    }
+    if (!confirm("정말로 모든 데이터를 초기화하시겠습니까?")) return;
+
+    db.ref('parking_result').remove().then(() => {
+      alert("초기화되었습니다.");
+      location.reload();
+    }).catch((error) => alert("초기화 실패: " + error.message));
+  }
+
+  // --- 서버에서 데이터 불러오기 ---
+  function loadFromFirebase() {
+    db.ref('parking_result').on('value', s => {
+      const d = s.val();
+      const slots = document.querySelectorAll('.slot[data-save="1"]');
+
+      if (d && d.slots) {
+        d.slots.forEach((item, i) => {
+          const slot = slots[i];
+          if (!slot) return;
+
+          const textEl = slot.querySelector('.slot-text');
+
+          // 상태 반영
+          if (item.filled) slot.classList.add('filled'); else slot.classList.remove('filled');
+          if (item.un) slot.classList.add('is-unassigned'); else slot.classList.remove('is-unassigned');
+
+          // 수기표기 우선
+          if (item.manualText && item.manualText.trim() !== "") {
+            slot.dataset.manualText = item.manualText;
+            slot.classList.add('manual-locked');
+            if (textEl) textEl.innerText = item.manualText.replace('동 ', '동\n');
+            slot.classList.add('filled'); // 수기표기는 사용중 표시(원치 않으면 삭제)
+          } else {
+            delete slot.dataset.manualText;
+            slot.classList.remove('manual-locked');
+            if (textEl) textEl.innerText = item.text;
+          }
         });
-    }
 
-    // --- 지도 렌더링 ---
-    function renderMap() {
-        const map = document.getElementById('mainMap');
-        const makeRow = (layout, tag) => `<div class="parking-row">` + layout.map(t => {
-            if(t === 'P') return `<div class="slot type-pillar">기둥</div>`;
-            if(t === 'E') return `<div class="slot type-entrance">🚪<br>출입문</div>`;
-            if(t === 'D') return `<div class="slot type-disabled">♿<br>장애인</div>`;
-            return `<div class="slot" data-role="parking" data-tag="${tag}"><input type="checkbox" class="slot-toggle" checked onchange="updateStyle(this)"><strong class="slot-text">${tag}</strong></div>`;
-        }).join('') + `</div>`;
-
-        map.innerHTML = `
-            <div class="building-box"><div class="label">A동 필로티</div>${makeRow(['S','S','P','S','E','S','P','S'], 'A')}${makeRow(['S','S','P','S','P','D'], 'A')}</div>
-            <div class="joint-box"><div class="label joint-label">A-B 공동</div>${makeRow(['D', 'S'], 'AB')}${makeRow(['S', 'S'], 'AB')}</div>
-            <div class="building-box"><div class="label">B동 필로티</div>${makeRow(['S','S','E','S','S'], 'B')}${makeRow(['S','S','P','S','P','S','S'], 'B')}</div>
-            <div class="joint-box"><div class="label joint-label">B-C 공동</div>${makeRow(['S', 'S'], 'BC')}${makeRow(['S', 'S'], 'BC')}</div>
-            <div class="building-box"><div class="label">C동 필로티</div>
-                ${makeRow(['S','S','E','S','S'], 'C')}
-                ${makeRow(['D','S','P','S','S'], 'C')}
-            </div>`;
-    }
-
-    // --- 관리자 로그인 ---
-    function handleAdminLogin() {
-        if (++clickCount >= 5) {
-            // 코드에서는 비밀번호를 확인하지만, 서버에 보낼 필요는 없습니다.
-            // 서버는 이미 데이터베이스에 'admin_password'가 존재하는지만 체크하기 때문입니다.
-            if (prompt("비밀번호") === "1234") {
-                isAdmin = true;
-                document.getElementById('adminControls').style.display = 'block';
-                document.getElementById('adminBadge').style.display = 'inline-block';
-                document.getElementById('unitWrapper').style.display = 'flex';
-                document.querySelectorAll('.chk-draw').forEach(el => el.disabled = false);
-                document.querySelectorAll('.slot-toggle').forEach(el => el.style.display = 'block');
-            }
-            clickCount = 0;
+        if (d.report) {
+          document.getElementById('summaryArea').innerHTML = d.report;
+          document.getElementById('summaryArea').style.display = 'block';
         }
-    }
 
-    // --- 추첨 로직 ---
-    function executeDraw() {
-        // 1. 신청 세대 분리 및 랜덤 셔플
-        const getApps = (dong) => Array.from(document.querySelectorAll(`.chk-draw[data-dong="${dong}"]:checked`))
-                                     .map(e => e.value).sort(() => Math.random() - 0.5);
-        let appsA = getApps('A');
-        let appsB = getApps('B');
-        let appsC = getApps('C');
+        if (!isAdmin) document.getElementById('unitWrapper').style.display = 'none';
+      }
+    });
+  }
 
-        // 2. 구역 슬롯 확보 (비지정 제외)
-        const getSlots = (tag) => Array.from(document.querySelectorAll(`.slot[data-tag="${tag}"]`))
-                                     .filter(s => !s.classList.contains('is-unassigned'));
-        let slotsA = getSlots('A');
-        let slotsB = getSlots('B');
-        let slotsC = getSlots('C');
-        let slotsAB = getSlots('AB');
-        let slotsBC = getSlots('BC');
+  // --- 이미지 저장 ---
+  function saveAsImage() {
+    html2canvas(document.getElementById('printArea'), { scale: 2 }).then(canvas => {
+      const a = document.createElement('a');
+      a.download = 'parking_map.png';
+      a.href = canvas.toDataURL();
+      a.click();
+    });
+  }
 
-        // 모든 슬롯 초기화
-        document.querySelectorAll('.slot[data-role="parking"]').forEach(s => {
-            s.querySelector('.slot-text').innerText = s.dataset.tag;
-            s.classList.remove('filled');
-        });
-
-        // 결과 저장용
-        let losers = [];
-
-        // [규칙 1] 각 동 전용 필로티 먼저 채우기
-        const fillDirect = (apps, slots) => {
-            while(apps.length > 0 && slots.length > 0) {
-                let p = apps.shift();
-                let s = slots.shift();
-                s.querySelector('.slot-text').innerText = p.replace('동 ', '동\n');
-                s.classList.add('filled');
-            }
-        };
-        fillDirect(appsA, slotsA);
-        fillDirect(appsB, slotsB);
-        fillDirect(appsC, slotsC);
-
-        // [규칙 2] A-B 공동구역: A동 먼저 채우고 남은 자리에 B동
-        fillDirect(appsA, slotsAB);
-        fillDirect(appsB, slotsAB);
-
-        // [규칙 3] B-C 공동구역: C동 먼저 채우고 남은 자리에 B동
-        fillDirect(appsC, slotsBC);
-        fillDirect(appsB, slotsBC);
-
-        // 남은 세대는 낙첨자(대기자)
-        losers = [...appsA, ...appsB, ...appsC];
-
-        // 4. 리포트 출력
-        const sArea = document.getElementById('summaryArea');
-        sArea.style.display = 'block';
-        sArea.innerHTML = `<h3>📊 구역별 추첨 결과</h3>` +
-            `<p>• 당첨 세대 수: ${document.querySelectorAll('.slot.filled').length} 세대</p>` +
-            (losers.length ? `<div style="color:red; font-weight:bold; margin-top:10px;">⚠️ 대기 순번: ${losers.join(', ')}</div>` : "");
-    }
-
-    // --- 서버 저장 (수정됨: 관리자 체크 강화) ---
-    function saveToFirebase() {
-        if (!isAdmin) {
-            alert("관리자 권한이 없습니다.");
-            return;
-        }
-        if (!confirm("이 결과를 서버에 저장하시겠습니까?")) return;
-        
-        const slotsData = Array.from(document.querySelectorAll('.slot[data-role="parking"]')).map(s => ({
-            text: s.querySelector('.slot-text').innerText,
-            filled: s.classList.contains('filled'),
-            un: s.classList.contains('is-unassigned'),
-            tag: s.dataset.tag
-        }));
-        
-        // 현재 규칙상 'admin_password'를 같이 보내지 않아도
-        // DB에 비밀번호가 존재하기만 하면 저장이 성공합니다.
-        db.ref('parking_result').set({ slots: slotsData, report: document.getElementById('summaryArea').innerHTML })
-            .then(() => alert("서버 저장 완료!"))
-            .catch((error) => alert("저장 실패: " + error.message));
-    }
-
-    // --- 데이터 초기화 (수정됨: 관리자 체크 강화) ---
-    function resetDatabase() {
-        if (!isAdmin) {
-            alert("관리자 권한이 없습니다.");
-            return;
-        }
-        if (!confirm("정말로 모든 데이터를 초기화하시겠습니까?")) return;
-        db.ref('parking_result').remove().then(() => {
-            alert("초기화되었습니다.");
-            location.reload();
-        }).catch((error) => alert("초기화 실패: " + error.message));
-    }
-
-    // --- 서버에서 데이터 불러오기 ---
-    function loadFromFirebase() {
-        db.ref('parking_result').on('value', s => {
-            const d = s.val();
-            const slots = document.querySelectorAll('.slot[data-role="parking"]');
-            if (d && d.slots) {
-                d.slots.forEach((item, i) => {
-                    if (slots[i]) {
-                        slots[i].querySelector('.slot-text').innerText = item.text;
-                        if (item.filled) slots[i].classList.add('filled'); else slots[i].classList.remove('filled');
-                        if (item.un) slots[i].classList.add('is-unassigned'); else slots[i].classList.remove('is-unassigned');
-                    }
-                });
-                if (d.report) {
-                    document.getElementById('summaryArea').innerHTML = d.report;
-                    document.getElementById('summaryArea').style.display = 'block';
-                }
-                if (!isAdmin) document.getElementById('unitWrapper').style.display = 'none';
-            }
-        });
-    }
-
-    // --- 스타일 업데이트 ---
-    function updateStyle(c) {
-        const s = c.closest('.slot');
-        if (c.checked) {
-            s.classList.remove('is-unassigned');
-            s.querySelector('.slot-text').innerText = s.dataset.tag;
-        } else {
-            s.classList.add('is-unassigned');
-            s.querySelector('.slot-text').innerText = "비지정";
-        }
-    }
-
-    // --- 이미지 저장 ---
-    function saveAsImage() {
-        html2canvas(document.getElementById('printArea'), { scale: 2 }).then(canvas => {
-            const a = document.createElement('a');
-            a.download = 'parking_map.png';
-            a.href = canvas.toDataURL();
-            a.click();
-        });
-    }
-
-    init();
+  init();
 </script>
 </body>
 </html>
