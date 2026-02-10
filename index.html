@@ -167,7 +167,7 @@
   <!-- iOS 안내(아이폰은 자동 설치 팝업이 없음) -->
   <div id="iosHelp" style="display:none; margin-top:10px; font-size:13px; color:#334155; background:#f1f5f9; border:1px solid #e2e8f0; padding:10px 12px; border-radius:12px; text-align:left;">
     아이폰/아이패드에서는 자동 설치가 뜨지 않습니다.<br>
-    사파리 브라우저 하단 점3개 메뉴를 눌러서 나오는 메뉴에서<br>
+	사파리 브라우저 하단 점3개 메뉴를 눌러서 나오는 메뉴에서<br>
     <b>공유(⬆️)</b> 버튼 → <b>홈 화면에 추가</b>를 눌러주세요.
   </div>
 
@@ -377,28 +377,34 @@
     //  - 일반 클릭: 누구나 임시공유(달력) + 서버 즉시 저장
     //  - Shift+클릭: 관리자 수기표기
     // ---------------------------
-    function bindSlotClickHandlers() {
-      const slots = Array.from(document.querySelectorAll('.slot[data-save="1"]'));
-      // ✅ 슬롯 고유키: DOM 순서 기반 index
-      slots.forEach((slot, idx) => { slot.dataset.sid = String(idx); });
+function bindSlotClickHandlers() {
+  const slots = Array.from(document.querySelectorAll('.slot[data-save="1"]'));
 
-      slots.forEach(slot => {
-        slot.addEventListener('click', (e) => {
-          if (e.target && e.target.classList.contains('slot-toggle')) return;
+  // ✅ 슬롯 고유키: DOM 순서 기반 index
+  slots.forEach((slot, idx) => { slot.dataset.sid = String(idx); });
 
-          if (!e.shiftKey) {  // 누구나
-            openShareModal(slot);
-            return;
-          }
+  slots.forEach(slot => {
+    slot.addEventListener('click', (e) => {
+      // 체크박스(비지정 토글) 클릭이면 무시
+      if (e.target && e.target.classList.contains('slot-toggle')) return;
 
-          if (!isAdmin) {
-            alert("수기표기는 관리자만 가능합니다.\n(임시공유는 그냥 클릭으로 설정하세요.)");
-            return;
-          }
-          openManualPrompt(slot);
-        });
-      });
-    }
+      // ✅ 관리자 모드: 기본은 "수기표기"
+      //    - (선택) Alt 키 누르면 임시공유 모달 열기
+      if (isAdmin) {
+        if (e.altKey) {
+          openShareModal(slot);     // 관리자도 임시공유를 쓰고 싶으면 Alt+클릭
+        } else {
+          openManualPrompt(slot);   // 관리자 기본: 텍스트 입력
+        }
+        return;
+      }
+
+      // ✅ 일반 사용자: 임시공유 모달
+      openShareModal(slot);
+    });
+  });
+}
+
 
     // ---------------------------
     // (관리자) 수기표기 입력
@@ -805,4 +811,3 @@
   </script>
 </body>
 </html>
-
