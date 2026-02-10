@@ -154,6 +154,14 @@
     .m-btn.primary { border:none; background:var(--accent); color:#fff; }
 
     #shareModal *, #shareModal *::before, #shareModal *::after { box-sizing: border-box; }
+
+    /* ✅✅✅ [추가] 모바일에서만 지도 형태 유지 + 가로 스크롤 */
+    @media (max-width: 768px) {
+      .map-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .map-container { align-items: flex-start; }
+      #mainMap { min-width: 980px; }          /* PC 지도 기준 폭 */
+      .parking-row { flex-wrap: nowrap; }     /* 깨짐 방지 핵심 */
+    }
   </style>
 </head>
 
@@ -167,7 +175,7 @@
   <!-- iOS 안내(아이폰은 자동 설치 팝업이 없음) -->
   <div id="iosHelp" style="display:none; margin-top:10px; font-size:13px; color:#334155; background:#f1f5f9; border:1px solid #e2e8f0; padding:10px 12px; border-radius:12px; text-align:left;">
     아이폰/아이패드에서는 자동 설치가 뜨지 않습니다.<br>
-	사파리 브라우저 하단 점3개 메뉴를 눌러서 나오는 메뉴에서<br>
+    사파리 브라우저 하단 점3개 메뉴를 눌러서 나오는 메뉴에서<br>
     <b>공유(⬆️)</b> 버튼 → <b>홈 화면에 추가</b>를 눌러주세요.
   </div>
 
@@ -188,7 +196,8 @@
 
         <div class="hint">
           ✅ 아무나: <b>슬롯 클릭</b> → 임시공유 날짜(달력) 설정 (바로 서버 저장됨)<br>
-          🛠 관리자: <b>Shift + 슬롯 클릭</b> → 수기표기(고정/메모) 입력<br>
+          🛠 관리자: <b>슬롯 클릭</b> → 수기표기(고정/메모) 입력<br>
+          🛠 관리자: <b>Alt + 슬롯 클릭</b> → 임시공유 날짜(달력) 설정<br>
           🛠 관리자: 체크박스 토글 → 비지정(추첨 제외)
         </div>
       </div>
@@ -374,37 +383,30 @@
 
     // ---------------------------
     // 슬롯 클릭 핸들러 바인딩
-    //  - 일반 클릭: 누구나 임시공유(달력) + 서버 즉시 저장
-    //  - Shift+클릭: 관리자 수기표기
+    //  - 일반 사용자: 클릭 → 임시공유(달력)
+    //  - 관리자: 클릭 → 수기표기 / Alt+클릭 → 임시공유(달력)
     // ---------------------------
-function bindSlotClickHandlers() {
-  const slots = Array.from(document.querySelectorAll('.slot[data-save="1"]'));
+    function bindSlotClickHandlers() {
+      const slots = Array.from(document.querySelectorAll('.slot[data-save="1"]'));
+      // ✅ 슬롯 고유키: DOM 순서 기반 index
+      slots.forEach((slot, idx) => { slot.dataset.sid = String(idx); });
 
-  // ✅ 슬롯 고유키: DOM 순서 기반 index
-  slots.forEach((slot, idx) => { slot.dataset.sid = String(idx); });
+      slots.forEach(slot => {
+        slot.addEventListener('click', (e) => {
+          if (e.target && e.target.classList.contains('slot-toggle')) return;
 
-  slots.forEach(slot => {
-    slot.addEventListener('click', (e) => {
-      // 체크박스(비지정 토글) 클릭이면 무시
-      if (e.target && e.target.classList.contains('slot-toggle')) return;
+          // ✅ 관리자 모드: 기본은 수기표기
+          if (isAdmin) {
+            if (e.altKey) openShareModal(slot);
+            else openManualPrompt(slot);
+            return;
+          }
 
-      // ✅ 관리자 모드: 기본은 "수기표기"
-      //    - (선택) Alt 키 누르면 임시공유 모달 열기
-      if (isAdmin) {
-        if (e.altKey) {
-          openShareModal(slot);     // 관리자도 임시공유를 쓰고 싶으면 Alt+클릭
-        } else {
-          openManualPrompt(slot);   // 관리자 기본: 텍스트 입력
-        }
-        return;
-      }
-
-      // ✅ 일반 사용자: 임시공유 모달
-      openShareModal(slot);
-    });
-  });
-}
-
+          // ✅ 일반 사용자: 임시공유 모달
+          openShareModal(slot);
+        });
+      });
+    }
 
     // ---------------------------
     // (관리자) 수기표기 입력
