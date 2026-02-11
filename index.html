@@ -18,14 +18,14 @@
   <meta name="theme-color" content="#3182ce">
 
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
   <title>편백나무 주차 관리 시스템</title>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- ✅ 설치 버튼(홈화면에 추가) 동작 수정본 -->
+  <!-- ✅ 설치 버튼(홈화면에 추가) 동작 -->
   <script>
     let deferredPrompt = null;
 
@@ -155,12 +155,18 @@
 
     #shareModal *, #shareModal *::before, #shareModal *::after { box-sizing: border-box; }
 
-    /* ✅✅✅ [추가] 모바일에서만 지도 형태 유지 + 가로 스크롤 */
+    /* ✅ 모바일: 한 화면에 지도 '축소'로 맞추기 */
     @media (max-width: 768px) {
-      .map-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .map-section { overflow: hidden; }
       .map-container { align-items: flex-start; }
-      #mainMap { min-width: 980px; }          /* PC 지도 기준 폭 */
-      .parking-row { flex-wrap: nowrap; }     /* 깨짐 방지 핵심 */
+
+      #mainMap {
+        width: 980px;
+        transform-origin: top left;
+        transform: scale(var(--mapScale, 1));
+      }
+
+      .parking-row { flex-wrap: wrap; }
     }
   </style>
 </head>
@@ -259,6 +265,26 @@
     let shareSlotEl = null;
 
     // ---------------------------
+    // ✅ 모바일 지도 자동 축소 (JS 영역에만 존재해야 함)
+    // ---------------------------
+    function updateMobileMapScale() {
+      if (window.innerWidth > 768) return;
+
+      const map = document.getElementById('mainMap');
+      const section = document.querySelector('.map-section');
+      if (!map || !section) return;
+
+      const baseWidth = 980;
+      const containerWidth = section.clientWidth;
+
+      const scale = Math.max(0.55, Math.min(1, containerWidth / baseWidth));
+      map.style.setProperty('--mapScale', scale.toString());
+    }
+
+    window.addEventListener('resize', updateMobileMapScale);
+    window.addEventListener('orientationchange', updateMobileMapScale);
+
+    // ---------------------------
     // 초기화
     // ---------------------------
     function init() {
@@ -267,6 +293,8 @@
       bindSlotClickHandlers();
       loadFromFirebase();       // 관리자 결과(주차 배정) 로드
       loadShareFromFirebase();  // ✅ 임시공유(누구나) 로드
+
+      updateMobileMapScale();   // ✅ 핵심: 렌더 후 1회 실행
     }
 
     // ---------------------------
@@ -309,7 +337,7 @@
         if (t === 'P') return `<div class="slot type-pillar">기둥</div>`;
         if (t === 'E') return `<div class="slot type-entrance">🚪<br>출입문</div>`;
 
-        // 장애인(특수) 슬롯: 저장/표시 가능, 추첨 대상 아님
+        // 장애인(특수) 슬롯
         if (t === 'D') {
           return `
             <div class="slot type-disabled"
@@ -320,7 +348,7 @@
             </div>`;
         }
 
-        // 일반 주차 슬롯: 추첨 대상 + 비지정 토글 + 저장 가능
+        // 일반 주차 슬롯
         return `
           <div class="slot"
                data-role="parking"
@@ -382,27 +410,21 @@
     }
 
     // ---------------------------
-    // 슬롯 클릭 핸들러 바인딩
-    //  - 일반 사용자: 클릭 → 임시공유(달력)
-    //  - 관리자: 클릭 → 수기표기 / Alt+클릭 → 임시공유(달력)
+    // 슬롯 클릭 핸들러
     // ---------------------------
     function bindSlotClickHandlers() {
       const slots = Array.from(document.querySelectorAll('.slot[data-save="1"]'));
-      // ✅ 슬롯 고유키: DOM 순서 기반 index
       slots.forEach((slot, idx) => { slot.dataset.sid = String(idx); });
 
       slots.forEach(slot => {
         slot.addEventListener('click', (e) => {
           if (e.target && e.target.classList.contains('slot-toggle')) return;
 
-          // ✅ 관리자 모드: 기본은 수기표기
           if (isAdmin) {
             if (e.altKey) openShareModal(slot);
             else openManualPrompt(slot);
             return;
           }
-
-          // ✅ 일반 사용자: 임시공유 모달
           openShareModal(slot);
         });
       });
@@ -429,8 +451,7 @@
 
         let base;
         if (slot.dataset.role === 'parking') {
-          if (slot.classList.contains('is-unassigned')) base = "비지정";
-          else base = slot.dataset.tag;
+          base = slot.classList.contains('is-unassigned') ? "비지정" : slot.dataset.tag;
         } else {
           base = "♿\n장애인";
         }
