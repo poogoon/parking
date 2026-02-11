@@ -82,37 +82,38 @@
       }
     });
 
-    // ---------------------------
-    // ✅ 모바일 지도: 한 화면에 "축소"해서 다 보이게
-    //   - PC는 영향 없음
-    // ---------------------------
-    function updateMobileMapScale() {
-      if (window.innerWidth > 768) return;
 
-      const map = document.getElementById('mainMap');
-      const section = document.querySelector('.map-section');
-      if (!map || !section) return;
+  // ---------------------------
+  // ✅ 모바일 지도: 한 화면에 "축소"해서 다 보이게
+  //   - PC는 영향 없음
+  // ---------------------------
+  function updateMobileMapScale() {
+    if (window.innerWidth > 768) return;
 
-      const baseWidth = 980;                 // #mainMap의 기준 width와 동일
-      const containerWidth = section.clientWidth;
+    const map = document.getElementById('mainMap');
+    const section = document.querySelector('.map-section');
+    if (!map || !section) return;
 
-      // 너무 작아지는 것 방지 (원하면 0.55 값을 0.65 등으로 조절)
-      const scale = Math.max(0.55, Math.min(1, containerWidth / baseWidth));
-      map.style.setProperty('--mapScale', scale.toString());
+    const baseWidth = 980;
+    const containerWidth = section.clientWidth;
+
+    const scale = Math.max(0.55, Math.min(1, containerWidth / baseWidth));
+    map.style.setProperty('--mapScale', scale.toString());
+  }
+
+  window.addEventListener('resize', updateMobileMapScale);
+  window.addEventListener('orientationchange', updateMobileMapScale);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setupInstallUI();
+    updateMobileMapScale(); // ✅ 이 줄도 같이 제거
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/parking/sw.js').catch(console.error);
     }
+  });
 
-    window.addEventListener('resize', updateMobileMapScale);
-    window.addEventListener('orientationchange', updateMobileMapScale);
 
-    // DOM 준비 후 UI 연결 + 서비스워커 등록 + 모바일 스케일 1회 적용
-    document.addEventListener('DOMContentLoaded', () => {
-      setupInstallUI();
-      updateMobileMapScale(); // ✅ 첫 로딩에도 적용
-
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/parking/sw.js').catch(console.error);
-      }
-    });
   </script>
 
   <style>
