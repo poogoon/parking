@@ -155,19 +155,27 @@
 
     #shareModal *, #shareModal *::before, #shareModal *::after { box-sizing: border-box; }
 
-    /* ✅ 모바일: 한 화면에 지도 '축소'로 맞추기 */
-    @media (max-width: 768px) {
-      .map-section { overflow: hidden; }
-      .map-container { align-items: flex-start; }
+  /* ✅ 모바일: 한 화면에 지도 '축소'로 맞추기 */
+@media (max-width: 768px) {
+  .map-section {
+    overflow-x: auto;              /* 가로 스크롤 허용 */
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
 
-      #mainMap {
-        width: 980px;
-        transform-origin: top left;
-        transform: scale(var(--mapScale, 1));
-      }
+  .map-container {
+    align-items: flex-start;
+  }
 
-      .parking-row { flex-wrap: wrap; }
-    }
+  #mainMap {
+    width: 980px;                  /* PC 기준 폭 유지 */
+  }
+
+  .parking-row {
+    flex-wrap: wrap;               /* ✅ 이 줄은 유지 */
+  }
+}
+
   </style>
 </head>
 
