@@ -1,5 +1,5 @@
 // sw.js - Simple offline cache for /parking/
-const CACHE = "parking-pwa-v1";
+const CACHE = "parking-pwa-v2";
 const ASSETS = [
   "/parking/",
   "/parking/index.html",
